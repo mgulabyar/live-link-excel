@@ -1308,7 +1308,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   onClick={handleCreateLiveLink}
                   endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />}
                   sx={{
-                    width: "70%",
+                    width: "80%",
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
@@ -1319,7 +1319,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
                   }}
                 >
-                  {linking ? "Updating..." : "Update PowerPoint Link"}
+                  {linking ? "Updating..." : "Update Data"}
                 </Button>
               </span>
             </Tooltip>
@@ -1331,7 +1331,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               onClick={handleUnlinkRange}
               endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
               sx={{
-                width: "70%", 
+                width: "80%", 
                 height: "44px",
                 fontWeight: 700,
                 textTransform: "none",
@@ -1357,7 +1357,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   onClick={handleCreateLiveLink}
                   endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}
                   sx={{
-                    width: "70%", 
+                    width: "80%", 
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
