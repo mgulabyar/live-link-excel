@@ -1225,7 +1225,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
         </Typography>
       </Box>
 
-      {/* Main content directly rendered on the clean taskpane canvas [1] */}
       <Box
         sx={{
           p: 2,
@@ -1252,7 +1251,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               letterSpacing: "0.3px"
             }}
           >
-            Live Link {/* Heading unified to Live Link */}
+            Live Link
           </Typography>
         </Box>
 
@@ -1303,6 +1302,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 fontWeight: 700,
                 textTransform: "none",
                 fontSize: "14px",
+                width: "60%",
                 fontFamily: "Segoe UI, Arial",
               }}
             >
