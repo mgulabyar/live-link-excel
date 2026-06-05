@@ -982,7 +982,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           can be refreshed directly in PowerPoint.
         </Typography>
 
-        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+        <Box sx={{ width: "70%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", mb: 2 }}>
           <TextField
             fullWidth
             size="small"
@@ -992,7 +992,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             disabled={linking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
-              width: "90%",
+              width: "70%",
               "& .MuiOutlinedInput-root": { height: "42px", fontSize: "13px", fontFamily: "Segoe UI, Arial" },
               "& .MuiInputLabel-root": { fontSize: "13px", fontFamily: "Segoe UI, Arial" }
             }}
