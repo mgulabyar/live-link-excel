@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Establishing Connection...</title>
+
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script src="https://alcdn.msauth.net/browser/2.28.3/js/msal-browser.min.js"></script>
+  </head>
+  <body
+    style="
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 80vh;
+      margin: 0;
+      background-color: #faf9f8;
+    "
+  >
+    <div style="text-align: center; color: #323130">
+      <h3 style="font-weight: 600; margin-bottom: 8px">Connecting to Microsoft 365...</h3>
+      <p style="font-size: 14px; color: #605e5c; margin-top: 0">Please do not close this window.</p>
+    </div>
+
+    <script>
+      
+      Office.onReady(function () {
+        const msalConfig = {
+          auth: {
+            clientId: "a18f51c9-e8ff-48eb-b4e0-8fe919bac4e2",
+            authority: "https://login.microsoftonline.com/common",
+            redirectUri: window.location.origin + "/login.html",
+          },
+          cache: {
+            cacheLocation: "localStorage",
+          },
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+        
+        msalInstance
+          .handleRedirectPromise()
+          .then((response) => {
+            if (response) {
+              
+              Office.context.ui.messageParent(
+                JSON.stringify({
+                  type: "auth_success",
+                  token: response.accessToken,
+                })
+              );
+            } else {
+             
+              const loginRequest = {
+                scopes: ["User.Read", "Files.ReadWrite.All", "Sites.Read.All"],
+              };
+              msalInstance.loginRedirect(loginRequest);
+            }
+          })
+          .catch((error) => {
+            console.error("Auth error:", error);
+            Office.context.ui.messageParent(
+              JSON.stringify({
+                type: "auth_error",
+                error: error.message,
+              })
+            );
+          });
+      });
+    </script>
+  </body>
+</html>
