@@ -1017,7 +1017,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   onClick={handleCreateLiveLink}
                   endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />}
                   sx={{
-                    width: "80%", // Takes full uniform 100% of the 90% parent container width [1]
+                    width: "70%", // Takes full uniform 100% of the 90% parent container width [1]
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
@@ -1040,7 +1040,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               onClick={handleUnlinkRange}
               endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
               sx={{
-                width: "90%", 
+                width: "70%", 
                 height: "44px",
                 fontWeight: 700,
                 textTransform: "none",
@@ -1059,14 +1059,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
               placement="top"
             >
               {/* FIXED: Span styled as block-level at 90% width to prevent child button text-wrap distortion [1] */}
-              <span style={{ display: "block", width: "90%" }}>
+              <span style={{ display: "block", width: "70%" }}>
                 <Button
                   variant="contained"
                   disabled={linking || !customName.trim() || fetchingName}
                   onClick={handleCreateLiveLink}
                   endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}
                   sx={{
-                    width: "80%", // Takes full uniform 100% of the 90% parent container width [1]
+                    width: "70%", // Takes full uniform 100% of the 90% parent container width [1]
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
