@@ -679,10 +679,12 @@ import {
   DialogContent,
   DialogActions,
   Snackbar,
+  TextField,
+  Tooltip,
 } from "@mui/material";
 import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
-import { registerLinkData, deleteLinkData } from "../services/api";
+import { registerLinkData, deleteLinkData, getLinkDetails } from "../services/api"; // getLinkDetails imported
 import {
   generateUUID,
   getActiveSelection,
@@ -723,6 +725,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const [isRangeLinked, setIsRangeLinked] = useState<string | null>(null);
   const [matchedRangeAddress, setMatchedRangeAddress] = useState<string | null>(null);
+  
+  // Custom naming states
+  const [customName, setCustomName] = useState<string>("");
+  const [fetchingName, setFetchingName] = useState<boolean>(false);
 
   useEffect(() => {
     checkForCopyDetection();
@@ -752,13 +758,28 @@ const Dashboard: React.FC<DashboardProps> = () => {
       if (match) {
         setIsRangeLinked(match.linkId);
         setMatchedRangeAddress(match.matchedRange);
+        
+        // Database se is linked range ka custom name fetch karein [1]
+        setFetchingName(true);
+        try {
+          const res = await getLinkDetails(match.linkId);
+          if (res.success && res.data) {
+            setCustomName(res.data.componentName || "");
+          }
+        } catch (dbErr) {
+          console.error("Failed to fetch link custom name:", dbErr);
+        } finally {
+          setFetchingName(false);
+        }
       } else {
         setIsRangeLinked(null);
         setMatchedRangeAddress(null);
+        setCustomName("");
       }
     } catch (e) {
       setIsRangeLinked(null);
       setMatchedRangeAddress(null);
+      setCustomName("");
     }
   };
 
@@ -896,6 +917,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           try {
             await registerLinkData({
               linkId: linkId!,
+              componentName: customName, 
               excelFileId: currentUrl,
               excelFileName: fileName,
               sheetName: selection.sheetName,
@@ -982,8 +1004,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }
       });
 
+      // FIXED: Instant local state clearing to dynamically revert UI back to Send to PowerPoint mode [1]
       setIsRangeLinked(null);
       setMatchedRangeAddress(null);
+      setCustomName(""); 
       setStatusMessage({
         text: "Link deleted successfully!.",
         severity: "success",
@@ -1051,6 +1075,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setShowCopyPrompt(false);
         setIsRangeLinked(null);
         setMatchedRangeAddress(null);
+        setCustomName("");
         setLinking(false);
         setStatusMessage({
           text: "Template reset completed.",
@@ -1216,7 +1241,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           scrollbarWidth: "none",
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2, mt: 1 }}>
           <LinkIcon sx={{ color: "#0078d4", fontSize: 32, mb: 0.8 }} />
           <Typography
             sx={{
@@ -1236,7 +1261,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             fontSize: "13px",
             color: "#605E5C",
             lineHeight: 1.5,
-            mb: 3.5,
+            mb: 2.5,
             fontFamily: "Segoe UI, Arial",
             textAlign: "center",
             px: 1,
@@ -1246,27 +1271,59 @@ const Dashboard: React.FC<DashboardProps> = () => {
           can be refreshed directly in PowerPoint.
         </Typography>
 
+        {/* CUSTOM NAME INPUT FIELD AREA [1] */}
+        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Component Custom Name"
+            placeholder="e.g. Monthly Revenue Table"
+            value={customName}
+            disabled={linking || fetchingName}
+            onChange={(e) => setCustomName(e.target.value)}
+            sx={{
+              width: "85%",
+              "& .MuiOutlinedInput-root": { height: "42px", fontSize: "13px", fontFamily: "Segoe UI, Arial" },
+              "& .MuiInputLabel-root": { fontSize: "13px", fontFamily: "Segoe UI, Arial" }
+            }}
+            InputProps={{
+              endAdornment: fetchingName && <CircularProgress size={16} color="inherit" />
+            }}
+          />
+        </Box>
+
+        {/* DYNAMIC BUTTONS PANEL */}
         {isRangeLinked ? (
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, width: "100%" }}>
-            <Button
-              variant="contained"
-              disabled={linking}
-              onClick={handleCreateLiveLink}
-              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />}
-              sx={{
-                width: "70%",
-                height: "44px",
-                bgcolor: "#0078d4",
-                fontWeight: 700,
-                textTransform: "none",
-                fontSize: "14px",
-                boxShadow: "none",
-                fontFamily: "Segoe UI, Arial",
-                "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
-              }}
+            {/* Dynamic Update button with tooltipped validation */}
+            <Tooltip 
+              title={!customName.trim() ? "Please enter a custom name to update." : "Update data on slide"} 
+              arrow 
+              placement="top"
             >
-              {linking ? "Updating..." : "Update Data"}
-            </Button>
+              <span>
+                <Button
+                  variant="contained"
+                  disabled={linking || !customName.trim() || fetchingName}
+                  onClick={handleCreateLiveLink}
+                  endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />}
+                  sx={{
+                    width: "70%",
+                    height: "44px",
+                    bgcolor: "#0078d4",
+                    fontWeight: 700,
+                    textTransform: "none",
+                    fontSize: "14px",
+                    boxShadow: "none",
+                    fontFamily: "Segoe UI, Arial",
+                    "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+                  }}
+                >
+                  {linking ? "Updating..." : "Update PowerPoint Link"}
+                </Button>
+              </span>
+            </Tooltip>
+
             <Button
               variant="outlined"
               color="error"
@@ -1287,25 +1344,34 @@ const Dashboard: React.FC<DashboardProps> = () => {
           </Box>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <Button
-              variant="contained"
-              disabled={linking}
-              onClick={handleCreateLiveLink}
-              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}
-              sx={{
-                width: "70%", 
-                height: "44px",
-                bgcolor: "#0078d4",
-                fontWeight: 700,
-                textTransform: "none",
-                fontSize: "14px",
-                boxShadow: "none",
-                fontFamily: "Segoe UI, Arial",
-                "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
-              }}
+            {/* Dynamic Send button with tooltipped validation [1] */}
+            <Tooltip 
+              title={!customName.trim() ? "Please enter a custom name first." : "Send snapshot to slide"} 
+              arrow 
+              placement="top"
             >
-              {linking ? "Linking..." : "Send to PowerPoint"}
-            </Button>
+              <span>
+                <Button
+                  variant="contained"
+                  disabled={linking || !customName.trim() || fetchingName}
+                  onClick={handleCreateLiveLink}
+                  endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}
+                  sx={{
+                    width: "70%", 
+                    height: "44px",
+                    bgcolor: "#0078d4",
+                    fontWeight: 700,
+                    textTransform: "none",
+                    fontSize: "14px",
+                    boxShadow: "none",
+                    fontFamily: "Segoe UI, Arial",
+                    "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+                  }}
+                >
+                  {linking ? "Linking..." : "Send to PowerPoint"}
+                </Button>
+              </span>
+            </Tooltip>
           </Box>
         )}
       </Box>
