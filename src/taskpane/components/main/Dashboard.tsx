@@ -1056,7 +1056,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               placement="top"
             >
               {/* FIXED: Span and Button widths are dynamically nested at 70% and 100% to guarantee perfect centering [1] */}
-              <span style={{ display: "block", width: "70%" }}>
+              <span style={{ display: "block", width: "90%" }}>
                 <Button
                   variant="contained"
                   disabled={linking || !customName.trim() || fetchingName}
