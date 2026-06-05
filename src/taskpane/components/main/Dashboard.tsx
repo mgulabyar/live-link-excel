@@ -1006,7 +1006,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
         <Box
           sx={{
-            width: "80%",
+            width: "70%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -1014,7 +1014,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           }}
         >
           <TextField
-            fullWidth
+            // fullWidth
             size="small"
             label="Custom Name"
             placeholder="e.g. Monthly Revenue Table"
@@ -1022,7 +1022,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             disabled={linking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
-              width: "90%",
+              width: "70%",
               "& .MuiOutlinedInput-root": {
                 height: "42px",
                 fontSize: "13px",
