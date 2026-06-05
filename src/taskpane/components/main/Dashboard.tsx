@@ -5,8 +5,6 @@
 //   Box,
 //   Typography,
 //   Button,
-//   Paper,
-//   IconButton,
 //   CircularProgress,
 //   Alert,
 //   Dialog,
@@ -14,7 +12,7 @@
 //   DialogContent,
 //   DialogActions,
 // } from "@mui/material";
-// import { CloudSync, Logout, Hub, WarningAmber } from "@mui/icons-material";
+// import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
 // import { registerLinkData, deleteLinkData } from "../services/api";
 // import {
@@ -47,7 +45,7 @@
 //   }
 // };
 
-// const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
+// const Dashboard: React.FC<DashboardProps> = () => {
 //   const [statusMessage, setStatusMessage] = useState<{
 //     text: string;
 //     severity: "success" | "error" | "info";
@@ -408,7 +406,19 @@
 //         overflow: "hidden",
 //       }}
 //     >
-//       <Dialog open={showCopyPrompt} disableEscapeKeyDown>
+//       <Dialog 
+//         open={showCopyPrompt} 
+//         disableEscapeKeyDown
+//         maxWidth="xs"
+//         fullWidth
+//         PaperProps={{
+//           sx: {
+//             borderRadius: "8px",
+//             p: 1.5,
+//             boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.15)",
+//           }
+//         }}
+//       >
 //         <DialogTitle
 //           sx={{
 //             display: "flex",
@@ -493,7 +503,7 @@
 //               boxShadow: "none",
 //             }}
 //           >
-//             Reset
+//             Reset All
 //           </Button>
 //         </DialogActions>
 //       </Dialog>
@@ -508,10 +518,9 @@
 //           color: "#FFFFFF",
 //           display: "flex",
 //           alignItems: "center",
-//           justifyContent: "space-between",
+//           justifyContent: "center",
 //         }}
 //       >
-//         <Box sx={{ width: 32 }} />
 //         <Typography
 //           sx={{
 //             fontWeight: 700,
@@ -522,33 +531,6 @@
 //           }}
 //         >
 //           EXCEL TO POWERPOINT
-//         </Typography>
-//         <IconButton onClick={onLogout} size="small" sx={{ color: "#FFFFFF" }}>
-//           <Logout sx={{ fontSize: 18 }} />
-//         </IconButton>
-//       </Box>
-
-//       <Box
-//         sx={{
-//           px: 2.5,
-//           py: 1.5,
-//           bgcolor: "#F3F2F1",
-//           display: "flex",
-//           alignItems: "center",
-//           gap: 1,
-//           borderBottom: "1px solid #EDEBE9",
-//         }}
-//       >
-//         <Box sx={{ width: 8, height: 8, bgcolor: "#107C10", borderRadius: "50%" }} />
-//         <Typography
-//           sx={{
-//             fontSize: "12px",
-//             fontWeight: 700,
-//             color: "#323130",
-//             fontFamily: "Segoe UI, Arial",
-//           }}
-//         >
-//           SYNC ENGINE ACTIVE
 //         </Typography>
 //       </Box>
 
@@ -566,84 +548,45 @@
 //           scrollbarWidth: "none",
 //         }}
 //       >
-//         <Paper
-//           elevation={0}
-//           sx={{ p: 3, border: "1px solid #D1D1D1", borderRadius: "8px", textAlign: "center" }}
-//         >
-//           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
-//             <Hub sx={{ color: "#0078d4", fontSize: 24, mb: 1 }} />
-//             <Typography
-//               sx={{
-//                 fontWeight: 800,
-//                 fontSize: "16px",
-//                 color: "#323130",
-//                 fontFamily: "Segoe UI, Arial",
-//               }}
-//             >
-//               Live Data Linking
-//             </Typography>
-//           </Box>
-
+//         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}>
+//           <LinkIcon sx={{ color: "#0078d4", fontSize: 32, mb: 0.8 }} />
 //           <Typography
 //             sx={{
-//               fontSize: "13px",
-//               color: "#605E5C",
-//               lineHeight: 1.5,
-//               mb: 3.5,
+//               fontWeight: 800,
+//               fontSize: "17px",
+//               color: "#323130",
 //               fontFamily: "Segoe UI, Arial",
-//               px: 1,
+//               letterSpacing: "0.3px"
 //             }}
 //           >
-//             Select any data range or chart in your sheet to create a live link. The linked object
-//             can be refreshed directly in PowerPoint.
+//             Live Link
 //           </Typography>
+//         </Box>
 
-//           {isRangeLinked ? (
-//             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-//               <Button
-//                 variant="contained"
-//                 fullWidth
-//                 disabled={linking}
-//                 onClick={handleCreateLiveLink}
-//                 startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <CloudSync />}
-//                 sx={{
-//                   height: "44px",
-//                   bgcolor: "#0078d4",
-//                   fontWeight: 700,
-//                   textTransform: "none",
-//                   fontSize: "14px",
-//                   boxShadow: "none",
-//                   fontFamily: "Segoe UI, Arial",
-//                   "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
-//                 }}
-//               >
-//                 {linking ? "Updating Link..." : "Update PowerPoint Link"}
-//               </Button>
-//               <Button
-//                 variant="outlined"
-//                 color="error"
-//                 fullWidth
-//                 disabled={linking}
-//                 onClick={handleUnlinkRange}
-//                 sx={{
-//                   height: "44px",
-//                   fontWeight: 700,
-//                   textTransform: "none",
-//                   fontSize: "14px",
-//                   fontFamily: "Segoe UI, Arial",
-//                 }}
-//               >
-//                 Unlink Range
-//               </Button>
-//             </Box>
-//           ) : (
+//         <Typography
+//           sx={{
+//             fontSize: "13px",
+//             color: "#605E5C",
+//             lineHeight: 1.5,
+//             mb: 3.5,
+//             fontFamily: "Segoe UI, Arial",
+//             textAlign: "center",
+//             px: 1,
+//           }}
+//         >
+//           Select any data range or chart in your sheet to create a live link. The linked object
+//           can be refreshed directly in PowerPoint.
+//         </Typography>
+
+//         {isRangeLinked ? (
+//           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, width: "100%" }}>
 //             <Button
 //               variant="contained"
-//               fullWidth
 //               disabled={linking}
 //               onClick={handleCreateLiveLink}
-//               startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <CloudSync />}
+//               endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />} // Unified Sync icon [1]
 //               sx={{
+//                 width: "70%",
 //                 height: "44px",
 //                 bgcolor: "#0078d4",
 //                 fontWeight: 700,
@@ -654,29 +597,63 @@
 //                 "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
 //               }}
 //             >
-//               {linking ? "Establishing Link..." : "Send to PowerPoint"}
+//               {linking ? "Updating..." : "Update Data"}
 //             </Button>
-//           )}
-
-//           {statusMessage && (
-//             <Alert
-//               severity={statusMessage.severity}
-//               sx={{ mt: 2.5, fontSize: "13px", fontFamily: "Segoe UI, Arial", textAlign: "left" }}
+//             <Button
+//               variant="outlined"
+//               color="error"
+//               disabled={linking}
+//               onClick={handleUnlinkRange}
+//               endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
+//               sx={{
+//                 width: "70%", 
+//                 height: "44px",
+//                 fontWeight: 700,
+//                 textTransform: "none",
+//                 fontSize: "14px",
+//                 fontFamily: "Segoe UI, Arial",
+//               }}
 //             >
-//               {statusMessage.text}
-//             </Alert>
-//           )}
-//         </Paper>
+//               Unlink Range
+//             </Button>
+//           </Box>
+//         ) : (
+//           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+//             <Button
+//               variant="contained"
+//               disabled={linking}
+//               onClick={handleCreateLiveLink}
+//               endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />} // Customized Send icon [1]
+//               sx={{
+//                 width: "70%", 
+//                 height: "44px",
+//                 bgcolor: "#0078d4",
+//                 fontWeight: 700,
+//                 textTransform: "none",
+//                 fontSize: "14px",
+//                 boxShadow: "none",
+//                 fontFamily: "Segoe UI, Arial",
+//                 "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+//               }}
+//             >
+//               {linking ? "Linking..." : "Send to PowerPoint"}
+//             </Button>
+//           </Box>
+//         )}
+
+//         {statusMessage && (
+//           <Alert
+//             severity={statusMessage.severity}
+//             sx={{ mt: 2.5, fontSize: "13px", fontFamily: "Segoe UI, Arial", textAlign: "left" }}
+//           >
+//             {statusMessage.text}
+//           </Alert>
+//         )}
 //       </Box>
 
-//       <Box sx={{ p: 2, textAlign: "center" }}>
+//       <Box sx={{ p: 1.5, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
 //         <Typography
-//           sx={{
-//             fontSize: "11px",
-//             color: "#A19F9D",
-//             fontWeight: 600,
-//             fontFamily: "Segoe UI, Arial",
-//           }}
+//           sx={{ fontSize: "10px", color: "#A19F9D", fontWeight: 600, fontFamily: "Segoe UI, Arial" }}
 //         >
 //           Live Linker v1.0.0
 //         </Typography>
@@ -701,6 +678,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Snackbar,
 } from "@mui/material";
 import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
@@ -1274,7 +1252,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               variant="contained"
               disabled={linking}
               onClick={handleCreateLiveLink}
-              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />} // Unified Sync icon [1]
+              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />}
               sx={{
                 width: "70%",
                 height: "44px",
@@ -1287,7 +1265,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
               }}
             >
-              {linking ? "Updating..." : "Update Data"}
+              {linking ? "Updating..." : "Update PowerPoint Link"}
             </Button>
             <Button
               variant="outlined"
@@ -1313,7 +1291,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               variant="contained"
               disabled={linking}
               onClick={handleCreateLiveLink}
-              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />} // Customized Send icon [1]
+              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}
               sx={{
                 width: "70%", 
                 height: "44px",
@@ -1330,16 +1308,25 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </Button>
           </Box>
         )}
+      </Box>
 
-        {statusMessage && (
+      {/* DYNAMIC AUTO-DISSOLVING 2-SECOND BOTTOM TOAST [1] */}
+      <Snackbar
+        open={statusMessage !== null}
+        autoHideDuration={2000} // Automatically disappears after 2 seconds! [1]
+        onClose={() => setStatusMessage(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }} // Placed beautifully at the bottom center [1]
+      >
+        {statusMessage ? (
           <Alert
+            onClose={() => setStatusMessage(null)}
             severity={statusMessage.severity}
-            sx={{ mt: 2.5, fontSize: "13px", fontFamily: "Segoe UI, Arial", textAlign: "left" }}
+            sx={{ width: "100%", fontSize: "13px", fontFamily: "Segoe UI, Arial" }}
           >
             {statusMessage.text}
           </Alert>
-        )}
-      </Box>
+        ) : undefined}
+      </Snackbar>
 
       <Box sx={{ p: 1.5, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
         <Typography
