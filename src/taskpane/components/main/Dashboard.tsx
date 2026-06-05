@@ -406,8 +406,8 @@
 //         overflow: "hidden",
 //       }}
 //     >
-//       <Dialog 
-//         open={showCopyPrompt} 
+//       <Dialog
+//         open={showCopyPrompt}
 //         disableEscapeKeyDown
 //         maxWidth="xs"
 //         fullWidth
@@ -604,9 +604,9 @@
 //               color="error"
 //               disabled={linking}
 //               onClick={handleUnlinkRange}
-//               endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
+//               endIcon={<LinkOff sx={{ fontSize: 18 }} />}
 //               sx={{
-//                 width: "70%", 
+//                 width: "70%",
 //                 height: "44px",
 //                 fontWeight: 700,
 //                 textTransform: "none",
@@ -625,7 +625,7 @@
 //               onClick={handleCreateLiveLink}
 //               endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />} // Customized Send icon [1]
 //               sx={{
-//                 width: "70%", 
+//                 width: "70%",
 //                 height: "44px",
 //                 bgcolor: "#0078d4",
 //                 fontWeight: 700,
@@ -664,7 +664,6 @@
 
 // export default Dashboard;
 
-
 declare const Office: any;
 declare const Excel: any;
 import React, { useEffect, useState } from "react";
@@ -674,11 +673,15 @@ import {
   Button,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Snackbar,
   TextField,
   Tooltip,
 } from "@mui/material";
-import { Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
+import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
 import { registerLinkData, deleteLinkData, getLinkDetails } from "../services/api";
 import {
@@ -695,16 +698,33 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
+const normalizeUrl = (url: string): string => {
+  if (!url) return "";
+  try {
+    const decodedUrl = decodeURIComponent(url);
+    return decodedUrl
+      .replace(/[\\/]+/g, "/")
+      .trim()
+      .toLowerCase();
+  } catch (e) {
+    return url
+      .replace(/[\\/]+/g, "/")
+      .trim()
+      .toLowerCase();
+  }
+};
+
 const Dashboard: React.FC<DashboardProps> = () => {
   const [statusMessage, setStatusMessage] = useState<{
     text: string;
     severity: "success" | "error" | "info";
   } | null>(null);
   const [linking, setLinking] = useState<boolean>(false);
+  const [showCopyPrompt, setShowCopyPrompt] = useState<boolean>(false);
 
   const [isRangeLinked, setIsRangeLinked] = useState<string | null>(null);
   const [matchedRangeAddress, setMatchedRangeAddress] = useState<string | null>(null);
-  
+
   const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
 
@@ -734,7 +754,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       if (match) {
         setIsRangeLinked(match.linkId);
         setMatchedRangeAddress(match.matchedRange);
-        
+
         setFetchingName(true);
         try {
           const res = await getLinkDetails(match.linkId);
@@ -775,7 +795,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       }
 
       Office.context.document.getFilePropertiesAsync(async (fileResult: any) => {
-        const currentUrl = fileResult.value.url || "excel-local-livelink";
+        const currentUrl = fileResult.value.url || "LocalWorkbook";
         const fileName = getFileNameFromUrl(currentUrl);
 
         if (isNewLink) {
@@ -796,7 +816,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           try {
             await registerLinkData({
               linkId: linkId!,
-              componentName: customName, 
+              componentName: customName,
               excelFileId: currentUrl,
               excelFileName: fileName,
               sheetName: selection.sheetName,
@@ -885,7 +905,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
       setIsRangeLinked(null);
       setMatchedRangeAddress(null);
-      setCustomName(""); 
+      setCustomName("");
       setStatusMessage({
         text: "Link deleted successfully!.",
         severity: "success",
@@ -952,7 +972,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
           scrollbarWidth: "none",
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}>
+        <Box
+          sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}
+        >
           <LinkIcon sx={{ color: "#0078d4", fontSize: 32, mb: 0.8 }} />
           <Typography
             sx={{
@@ -960,7 +982,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               fontSize: "17px",
               color: "#323130",
               fontFamily: "Segoe UI, Arial",
-              letterSpacing: "0.3px"
+              letterSpacing: "0.3px",
             }}
           >
             Live Link
@@ -978,11 +1000,19 @@ const Dashboard: React.FC<DashboardProps> = () => {
             px: 1,
           }}
         >
-          Select any data range or chart in your sheet to create a live link. The linked object
-          can be refreshed directly in PowerPoint.
+          Select any data range or chart in your sheet to create a live link. The linked object can
+          be refreshed directly in PowerPoint.
         </Typography>
 
-        <Box sx={{ width: "70%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", mb: 2 }}>
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
           <TextField
             fullWidth
             size="small"
@@ -992,32 +1022,54 @@ const Dashboard: React.FC<DashboardProps> = () => {
             disabled={linking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
-              width: "70%",
-              "& .MuiOutlinedInput-root": { height: "42px", fontSize: "13px", fontFamily: "Segoe UI, Arial" },
-              "& .MuiInputLabel-root": { fontSize: "13px", fontFamily: "Segoe UI, Arial" }
+              width: "90%",
+              "& .MuiOutlinedInput-root": {
+                height: "42px",
+                fontSize: "13px",
+                fontFamily: "Segoe UI, Arial",
+              },
+              "& .MuiInputLabel-root": { fontSize: "13px", fontFamily: "Segoe UI, Arial" },
             }}
             InputProps={{
-              endAdornment: fetchingName && <CircularProgress size={16} color="inherit" />
+              endAdornment: fetchingName && <CircularProgress size={16} color="inherit" />,
             }}
           />
         </Box>
 
         {isRangeLinked ? (
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, width: "100%" }}>
-            <Tooltip 
-              title={!customName.trim() ? "Please enter a custom name to update." : "Update data on slide"} 
-              arrow 
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1.5,
+              width: "100%",
+            }}
+          >
+            <Tooltip
+              title={
+                !customName.trim()
+                  ? "Please enter a custom name to update."
+                  : "Update data on slide"
+              }
+              arrow
               placement="top"
             >
-              {/* FIXED: Span styled as block-level at 90% width to prevent child button text-wrap distortion [1] */}
-              <span style={{ display: "block", width: "90%" }}>
+              {/* FIXED: Span and Button widths are dynamically nested at 70% and 100% to guarantee perfect centering [1] */}
+              <span style={{ display: "block", width: "70%" }}>
                 <Button
                   variant="contained"
                   disabled={linking || !customName.trim() || fetchingName}
                   onClick={handleCreateLiveLink}
-                  endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />}
+                  endIcon={
+                    linking ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <Sync sx={{ fontSize: 18 }} />
+                    )
+                  }
                   sx={{
-                    width: "70%", // Takes full uniform 100% of the 90% parent container width [1]
+                    width: "100%", // Takes full parent span width [1]
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
@@ -1038,9 +1090,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
               color="error"
               disabled={linking}
               onClick={handleUnlinkRange}
-              endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
+              endIcon={<LinkOff sx={{ fontSize: 18 }} />}
               sx={{
-                width: "70%", 
+                width: "70%", // Keeps direct 70% alignment [1]
                 height: "44px",
                 fontWeight: 700,
                 textTransform: "none",
@@ -1052,21 +1104,31 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </Button>
           </Box>
         ) : (
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <Tooltip 
-              title={!customName.trim() ? "Please enter a custom name first." : "Send snapshot to slide"} 
-              arrow 
+          <Box
+            sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
+          >
+            <Tooltip
+              title={
+                !customName.trim() ? "Please enter a custom name first." : "Send snapshot to slide"
+              }
+              arrow
               placement="top"
             >
-              {/* FIXED: Span styled as block-level at 90% width to prevent child button text-wrap distortion [1] */}
+              {/* FIXED: Span and Button widths are dynamically nested at 70% and 100% to guarantee perfect centering [1] */}
               <span style={{ display: "block", width: "70%" }}>
                 <Button
                   variant="contained"
                   disabled={linking || !customName.trim() || fetchingName}
                   onClick={handleCreateLiveLink}
-                  endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}
+                  endIcon={
+                    linking ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <Send sx={{ fontSize: 18 }} />
+                    )
+                  }
                   sx={{
-                    width: "70%", // Takes full uniform 100% of the 90% parent container width [1]
+                    width: "100%", // Takes full parent span width [1]
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
@@ -1087,7 +1149,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
       <Snackbar
         open={statusMessage !== null}
-        autoHideDuration={2000} 
+        autoHideDuration={2000}
         onClose={() => setStatusMessage(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
@@ -1104,7 +1166,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
       <Box sx={{ p: 1.5, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
         <Typography
-          sx={{ fontSize: "10px", color: "#A19F9D", fontWeight: 600, fontFamily: "Segoe UI, Arial" }}
+          sx={{
+            fontSize: "10px",
+            color: "#A19F9D",
+            fontWeight: 600,
+            fontFamily: "Segoe UI, Arial",
+          }}
         >
           Live Linker v1.0.0
         </Typography>
