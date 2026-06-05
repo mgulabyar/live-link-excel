@@ -702,7 +702,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { CloudSync, Link as LinkIcon, WarningAmber } from "@mui/icons-material"; // TableChart/Hub replaced with LinkIcon
+import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
 import { registerLinkData, deleteLinkData } from "../services/api";
 import {
@@ -1198,7 +1198,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Clean Header with centered title and no Logout button */}
       <Box
         sx={{
           position: "sticky",
@@ -1209,7 +1208,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           color: "#FFFFFF",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center", // Centered Title
+          justifyContent: "center",
         }}
       >
         <Typography
@@ -1239,9 +1238,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
           scrollbarWidth: "none",
         }}
       >
-        {/* Centered Vertical Logo & Header Area (Matched with PowerPoint) */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}>
-          <LinkIcon sx={{ color: "#0078d4", fontSize: 32, mb: 0.8 }} /> {/* TableChart/Hub replaced with LinkIcon */}
+          <LinkIcon sx={{ color: "#0078d4", fontSize: 32, mb: 0.8 }} />
           <Typography
             sx={{
               fontWeight: 800,
@@ -1270,15 +1268,16 @@ const Dashboard: React.FC<DashboardProps> = () => {
           can be refreshed directly in PowerPoint.
         </Typography>
 
+        {/* COMPACT & SYMMETRICALLY CENTERED BUTTONS AREA */}
         {isRangeLinked ? (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, width: "100%" }}>
             <Button
               variant="contained"
-              fullWidth
               disabled={linking}
               onClick={handleCreateLiveLink}
-              startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <CloudSync />}
+              startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />} // Unified Sync icon [1]
               sx={{
+                width: "85%", // Perfectly balanced width [1]
                 height: "44px",
                 bgcolor: "#0078d4",
                 fontWeight: 700,
@@ -1289,20 +1288,20 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
               }}
             >
-              {linking ? "Updating Link..." : "Update PowerPoint Link"}
+              {linking ? "Updating..." : "Update PowerPoint Link"}
             </Button>
             <Button
               variant="outlined"
               color="error"
-              fullWidth
               disabled={linking}
               onClick={handleUnlinkRange}
+              startIcon={<LinkOff sx={{ fontSize: 18 }} />} // Customized LinkOff icon
               sx={{
+                width: "85%", // Perfectly balanced width [1]
                 height: "44px",
                 fontWeight: 700,
                 textTransform: "none",
                 fontSize: "14px",
-                width: "60%",
                 fontFamily: "Segoe UI, Arial",
               }}
             >
@@ -1310,25 +1309,27 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </Button>
           </Box>
         ) : (
-          <Button
-            variant="contained"
-            fullWidth
-            disabled={linking}
-            onClick={handleCreateLiveLink}
-            startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <CloudSync />}
-            sx={{
-              height: "44px",
-              bgcolor: "#0078d4",
-              fontWeight: 700,
-              textTransform: "none",
-              fontSize: "14px",
-              boxShadow: "none",
-              fontFamily: "Segoe UI, Arial",
-              "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
-            }}
-          >
-            {linking ? "Establishing Link..." : "Send to PowerPoint"}
-          </Button>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+            <Button
+              variant="contained"
+              disabled={linking}
+              onClick={handleCreateLiveLink}
+              startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />} // Customized Send icon [1]
+              sx={{
+                width: "85%", // Perfectly balanced width [1]
+                height: "44px",
+                bgcolor: "#0078d4",
+                fontWeight: 700,
+                textTransform: "none",
+                fontSize: "14px",
+                boxShadow: "none",
+                fontFamily: "Segoe UI, Arial",
+                "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+              }}
+            >
+              {linking ? "Linking..." : "Send to PowerPoint"}
+            </Button>
+          </Box>
         )}
 
         {statusMessage && (
