@@ -1276,13 +1276,13 @@ const Dashboard: React.FC<DashboardProps> = () => {
           <TextField
             fullWidth
             size="small"
-            label="Component Custom Name"
+            label="Custom Name"
             placeholder="e.g. Monthly Revenue Table"
             value={customName}
             disabled={linking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
-              width: "85%",
+              width: "90%",
               "& .MuiOutlinedInput-root": { height: "42px", fontSize: "13px", fontFamily: "Segoe UI, Arial" },
               "& .MuiInputLabel-root": { fontSize: "13px", fontFamily: "Segoe UI, Arial" }
             }}
@@ -1308,7 +1308,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   onClick={handleCreateLiveLink}
                   endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />}
                   sx={{
-                    width: "80%",
+                    width: "90%",
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
@@ -1331,7 +1331,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               onClick={handleUnlinkRange}
               endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
               sx={{
-                width: "80%", 
+                width: "90%", 
                 height: "44px",
                 fontWeight: 700,
                 textTransform: "none",
@@ -1357,7 +1357,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   onClick={handleCreateLiveLink}
                   endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}
                   sx={{
-                    width: "80%", 
+                    width: "90%", 
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
