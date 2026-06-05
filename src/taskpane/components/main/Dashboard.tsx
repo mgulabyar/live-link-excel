@@ -1006,7 +1006,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
         <Box
           sx={{
-            width: "100%",
+            width: "80%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
