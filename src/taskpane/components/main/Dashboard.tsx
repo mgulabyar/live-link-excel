@@ -1010,6 +1010,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            justifyContent: "center",
             mb: 2,
           }}
         >
