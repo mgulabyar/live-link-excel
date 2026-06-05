@@ -1265,7 +1265,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
               }}
             >
-              {linking ? "Updating..." : "Update PowerPoint Link"}
+              {linking ? "Updating..." : "Update Data"}
             </Button>
             <Button
               variant="outlined"
@@ -1310,12 +1310,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
         )}
       </Box>
 
-      {/* DYNAMIC AUTO-DISSOLVING 2-SECOND BOTTOM TOAST [1] */}
       <Snackbar
         open={statusMessage !== null}
-        autoHideDuration={2000} // Automatically disappears after 2 seconds! [1]
+        autoHideDuration={2000} 
         onClose={() => setStatusMessage(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }} // Placed beautifully at the bottom center [1]
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         {statusMessage ? (
           <Alert
