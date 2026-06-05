@@ -1006,7 +1006,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
         <Box
           sx={{
-            width: "70%",
+            width: "90%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -1023,7 +1023,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             disabled={linking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
-              width: "70%",
+              width: "90%",
               "& .MuiOutlinedInput-root": {
                 height: "42px",
                 fontSize: "13px",
