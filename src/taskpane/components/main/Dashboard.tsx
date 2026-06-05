@@ -1193,7 +1193,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               boxShadow: "none",
             }}
           >
-            Reset
+            Reset All
           </Button>
         </DialogActions>
       </Dialog>
@@ -1268,16 +1268,15 @@ const Dashboard: React.FC<DashboardProps> = () => {
           can be refreshed directly in PowerPoint.
         </Typography>
 
-        {/* COMPACT & SYMMETRICALLY CENTERED BUTTONS AREA */}
         {isRangeLinked ? (
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, width: "100%" }}>
             <Button
               variant="contained"
               disabled={linking}
               onClick={handleCreateLiveLink}
-              startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />} // Unified Sync icon [1]
+              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />} // Unified Sync icon [1]
               sx={{
-                width: "85%", // Perfectly balanced width [1]
+                width: "70%",
                 height: "44px",
                 bgcolor: "#0078d4",
                 fontWeight: 700,
@@ -1295,9 +1294,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
               color="error"
               disabled={linking}
               onClick={handleUnlinkRange}
-              startIcon={<LinkOff sx={{ fontSize: 18 }} />} // Customized LinkOff icon
+              endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
               sx={{
-                width: "85%", // Perfectly balanced width [1]
+                width: "70%", 
                 height: "44px",
                 fontWeight: 700,
                 textTransform: "none",
@@ -1314,9 +1313,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
               variant="contained"
               disabled={linking}
               onClick={handleCreateLiveLink}
-              startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />} // Customized Send icon [1]
+              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />} // Customized Send icon [1]
               sx={{
-                width: "85%", // Perfectly balanced width [1]
+                width: "70%", 
                 height: "44px",
                 bgcolor: "#0078d4",
                 fontWeight: 700,
