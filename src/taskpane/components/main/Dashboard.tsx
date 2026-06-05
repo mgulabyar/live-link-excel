@@ -1287,7 +1287,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
               }}
             >
-              {linking ? "Updating..." : "Update PowerPoint Link"}
+              {linking ? "Updating..." : "Update Data"}
             </Button>
             <Button
               variant="outlined"
