@@ -14,7 +14,9 @@
     <AppDomain>https://www.contoso.com</AppDomain>
     <AppDomain>https://login.microsoftonline.com</AppDomain>
     <AppDomain>https://graph.microsoft.com</AppDomain>
-  </AppDomains>
+  <AppDomain>https://live-link-backend.vercel.app</AppDomain>
+
+  </>
   
   <Hosts>
     <Host Name="Workbook"/>
