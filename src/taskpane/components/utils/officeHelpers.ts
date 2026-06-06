@@ -252,6 +252,7 @@
 //     console.log(`[DEBUG] Successfully wrote Custom XML for Link ID: ${linkId}`);
 //   });
 // };
+
 declare const Excel: any;
 
 export interface LinkMatch {
@@ -326,12 +327,10 @@ const rangesIntersect = (rect1: ExcelRect, rect2: ExcelRect): boolean => {
   );
 };
 
-// Helper to safely verify if a string is a cell range or a chart name
 const isCoordinates = (str: string): boolean => {
   return /^[A-Z]+[0-9]+(:[A-Z]+[0-9]+)?$/i.test(str.replace(/[$]/g, ""));
 };
 
-// Rebuilt with bulletproof exact string matches & coordinate validations [5]
 export const getExistingLinkId = async (
   sheetName: string,
   rangeAddress: string
@@ -353,6 +352,7 @@ export const getExistingLinkId = async (
     const cleanSheet = sheetName.trim().toLowerCase();
     const cleanRange = rangeAddress.trim().toLowerCase();
 
+    // 1. Direct Range & Chart exact name matching [1]
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value; 
@@ -363,22 +363,18 @@ export const getExistingLinkId = async (
           const savedLinkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
 
           if (savedSheet === cleanSheet) {
-            // Case 1: Exact String Match (Handles Charts and exact table select instantly!) [1]
             if (savedRange === cleanRange) {
-              console.log(`[DEBUG] EXACT MATCH FOUND! Custom name loaded for: ${savedRange}`);
               return {
                 linkId: savedLinkId,
                 matchedRange: savedRange
               };
             }
 
-            // Case 2: Coordinate Intersection Match (Only runs if both are valid cell ranges) [5]
             if (isCoordinates(savedRange) && isCoordinates(cleanRange)) {
               const savedRect = parseRangeAddress(savedRange);
               const currentRect = parseRangeAddress(cleanRange);
 
               if (rangesIntersect(currentRect, savedRect)) {
-                console.log(`[DEBUG] INTERSECTION MATCH FOUND! Selection [${cleanRange}] is inside [${savedRange}]`);
                 return {
                   linkId: savedLinkId,
                   matchedRange: savedRange
@@ -391,6 +387,31 @@ export const getExistingLinkId = async (
         console.error("Failed to parse single Custom XML Part safely:", partErr);
       }
     }
+
+    // 2. Fallback: Agar cells select hain par sheet par koi linked Chart majood hai [1]
+    for (let item of xmlBlobs) {
+      try {
+        const xmlText = item.xmlBlob.value;
+        if (xmlText && xmlText.includes("LiveLink")) {
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const savedSheet = (xmlDoc.getElementsByTagName("SheetName")[0]?.textContent || "").trim().toLowerCase();
+          const savedRange = (xmlDoc.getElementsByTagName("RangeAddress")[0]?.textContent || "").trim().toLowerCase();
+          const savedLinkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
+          const savedType = (xmlDoc.getElementsByTagName("Type")[0]?.textContent || "").trim();
+
+          if (savedSheet === cleanSheet && savedType === "Chart") {
+            // Sheet matches and has a linked Chart. Activate Update/Unlink mode for Chart! [1]
+            return {
+              linkId: savedLinkId,
+              matchedRange: savedRange
+            };
+          }
+        }
+      } catch (e) {
+        console.error("Failed to scan fallback chart links:", e);
+      }
+    }
+
     return null;
   });
 };
