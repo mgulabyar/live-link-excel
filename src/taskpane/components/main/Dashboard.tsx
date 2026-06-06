@@ -491,7 +491,6 @@
 
 // export default Dashboard;
 
-
 declare const Office: any;
 declare const Excel: any;
 import React, { useEffect, useState } from "react";
@@ -528,7 +527,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     severity: "success" | "error" | "info";
   } | null>(null);
 
-  // Independent loading button states
+  // Independent loading states
   const [isLinking, setIsLinking] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isUnlinking, setIsUnlinking] = useState<boolean>(false);
@@ -538,9 +537,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
-  
-  // Safe Mouse-Enter State Lock to completely bypass async focus race conditions [1]
-  const [isMouseInPane, setIsMouseInPane] = useState<boolean>(false);
+
+  // Safe tracking states to prevent focus deselections [1]
+  const [lastSelection, setLastSelection] = useState<any>(null);
+  const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
 
   useEffect(() => {
     let eventResult: any;
@@ -558,31 +558,42 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }).catch((err: any) => console.error("Event removal failed:", err));
       }
     };
-  }, [isMouseInPane]); // State dependency added [1]
+  }, [isInputFocused]);
 
   const handleSelectionChanged = async () => {
-    // If mouse is inside taskpane, completely ignore selection changes from Excel [1]
-    if (isMouseInPane) {
-      console.log("[DEBUG] Selection change ignored because mouse is active inside the taskpane.");
+    // Standard Active Element focus check to prevent async race condition during typing [1]
+    const activeEl = document.activeElement;
+    const isTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.hasAttribute("contenteditable"));
+
+    if (isInputFocused || isTyping) {
+      console.log("[DEBUG] Ignoring selection change because user is typing.");
       return;
     }
 
     try {
       const selection = await getActiveSelection();
+      setLastSelection(selection); // Cache the valid selection state [1]
+
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
       if (match) {
-        setIsRangeLinked(match.linkId);
-        setMatchedRangeAddress(match.matchedRange);
-
         setFetchingName(true);
         try {
           const res = await getLinkDetails(match.linkId);
           if (res.success && res.data) {
+            setIsRangeLinked(match.linkId);
+            setMatchedRangeAddress(match.matchedRange);
             setCustomName(res.data.componentName || "");
+          } else {
+            setIsRangeLinked(null);
+            setMatchedRangeAddress(null);
+            setCustomName("");
           }
         } catch (dbErr) {
-          console.error("Failed to fetch link custom name:", dbErr);
+          console.warn("MongoDB verification failed:", dbErr);
+          setIsRangeLinked(null);
+          setMatchedRangeAddress(null);
+          setCustomName("");
         } finally {
           setFetchingName(false);
         }
@@ -592,32 +603,34 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setCustomName("");
       }
     } catch (e) {
-      setIsRangeLinked(null);
-      setMatchedRangeAddress(null);
-      setCustomName("");
+      // SILENT BYPASS: Retain the last successful selection on focus loss to prevent wipes [1]
+      console.log("[DEBUG] Focus lost, retaining last selection state:", lastSelection);
     }
   };
 
   const handleCreateLiveLink = async () => {
-    const selection = await getActiveSelection(matchedRangeAddress || undefined);
-    const type = selection.isChart ? "Chart" : "Table";
-
-    let linkId = isRangeLinked;
-    let isNewLink = false;
-
-    if (!linkId) {
-      linkId = generateUUID();
-      isNewLink = true;
-    }
-
-    if (isNewLink) {
-      setIsLinking(true);
-    } else {
-      setIsUpdating(true);
-    }
-    setStatusMessage(null);
-
     try {
+      // Use last successful selection if Excel selection is lost on click [1]
+      const selection = matchedRangeAddress 
+        ? await getActiveSelection(matchedRangeAddress) 
+        : lastSelection || await getActiveSelection();
+
+      const type = selection.isChart ? "Chart" : "Table";
+      let linkId = isRangeLinked;
+      let isNewLink = false;
+
+      if (!linkId) {
+        linkId = generateUUID();
+        isNewLink = true;
+      }
+
+      if (isNewLink) {
+        setIsLinking(true);
+      } else {
+        setIsUpdating(true);
+      }
+      setStatusMessage(null);
+
       Office.context.document.getFilePropertiesAsync(async (fileResult: any) => {
         const currentUrl = fileResult.value.url || "excel-local-livelink";
         const fileName = getFileNameFromUrl(currentUrl);
@@ -670,8 +683,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     } catch (err: any) {
       console.error("Linking failed:", err);
       setStatusMessage({
-        text:
-          err.response?.data?.message || err.message || "An error occurred while linking range.",
+        text: err.message || "An error occurred while linking range.",
         severity: "error",
       });
       setIsLinking(false);
@@ -733,7 +745,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       setMatchedRangeAddress(null);
       setCustomName("");
       setStatusMessage({
-        text: "Link deleted successfully!.",
+        text: "Link deleted successfully!",
         severity: "success",
       });
     } catch (err: any) {
@@ -749,8 +761,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   return (
     <Box
-      onMouseEnter={() => setIsMouseInPane(true)} // Slide Focus Lock [1]
-      onMouseLeave={() => setIsMouseInPane(false)} // Selection unlock [1]
       sx={{
         height: "100vh",
         display: "flex",
@@ -832,7 +842,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           be refreshed directly in PowerPoint.
         </Typography>
 
-        {/* Input box margin tighted from mb: 2 to mb: 1 to resolve the clunky layout vertical gap */}
+        {/* Input box bottom margin reduced by 1px (mb: 1) for professional compact visual alignment */}
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 1 }}>
           <TextField
             size="small"
@@ -840,6 +850,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
             placeholder="e.g. Monthly Revenue Table"
             value={customName}
             disabled={isLinking || isUpdating || isUnlinking || fetchingName}
+            // Bind onFocus and onBlur to safely lock focus-loss deselects [1]
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setTimeout(() => setIsInputFocused(false), 300)}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
               width: "70%", 

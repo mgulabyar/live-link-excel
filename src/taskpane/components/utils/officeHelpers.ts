@@ -327,12 +327,10 @@ const rangesIntersect = (rect1: ExcelRect, rect2: ExcelRect): boolean => {
   );
 };
 
-// Validates if a string represents cell coordinates to prevent crashes
 const isCoordinates = (str: string): boolean => {
   return /^[A-Z]+[0-9]+(:[A-Z]+[0-9]+)?$/i.test(str.replace(/[$]/g, ""));
 };
 
-// Rebuilt with exact string matches & coordinate validations [5]
 export const getExistingLinkId = async (
   sheetName: string,
   rangeAddress: string
@@ -354,7 +352,6 @@ export const getExistingLinkId = async (
     const cleanSheet = sheetName.trim().toLowerCase();
     const cleanRange = rangeAddress.trim().toLowerCase();
 
-    // 1. Direct exact string match (Handles Charts and exact table select instantly!) [1]
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value; 
@@ -372,7 +369,6 @@ export const getExistingLinkId = async (
               };
             }
 
-            // Coordinate intersection check (only if both are valid cell ranges) [5]
             if (isCoordinates(savedRange) && isCoordinates(cleanRange)) {
               const savedRect = parseRangeAddress(savedRange);
               const currentRect = parseRangeAddress(cleanRange);
@@ -391,7 +387,6 @@ export const getExistingLinkId = async (
       }
     }
 
-    // 2. Fallback: If cell is selected on a sheet containing a linked Chart [1]
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value;
