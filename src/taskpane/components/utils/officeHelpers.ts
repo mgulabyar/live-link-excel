@@ -253,6 +253,9 @@
 //   });
 // };
 
+
+
+
 declare const Excel: any;
 
 export interface LinkMatch {
@@ -418,6 +421,7 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
   sheetName: string;
   rangeAddress: string;
   dataSnapshot: any;
+  chartTitle?: string; // ChartTitle property added [1]
 }> => {
   return await Excel.run(async (context: any) => {
     let isChart = false;
@@ -432,19 +436,26 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
 
       if (!isCoordinates(targetRange)) {
         const charts = activeSheet.charts;
-        charts.load("items/name");
+        charts.load("items/name,items/title");
         await context.sync();
 
         const targetChart = charts.items.find((c: any) => c.name.toLowerCase() === targetRange.toLowerCase());
         if (targetChart) {
           const chartImage = targetChart.getImage();
+          targetChart.title.load("text"); // Load Chart Title in background [1]
           await context.sync();
 
           isChart = true;
           sheetName = activeSheet.name;
           rangeAddress = targetRange;
           dataSnapshot = `data:image/png;base64,${chartImage.value}`;
-          return { isChart, sheetName, rangeAddress, dataSnapshot };
+          return { 
+            isChart, 
+            sheetName, 
+            rangeAddress, 
+            dataSnapshot, 
+            chartTitle: targetChart.title.text || targetChart.name // Fallback [1]
+          };
         }
       }
 
@@ -463,7 +474,8 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
 
     try {
       const activeChart = context.workbook.getSelectedChart();
-      activeChart.load(["name", "worksheet"]);
+      activeChart.load(["name", "worksheet", "title"]);
+      activeChart.title.load("text"); // Load selected chart's title text [1]
       await context.sync();
 
       const chartImage = activeChart.getImage();
@@ -473,7 +485,13 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
       sheetName = activeChart.worksheet.name;
       rangeAddress = activeChart.name;
       dataSnapshot = `data:image/png;base64,${chartImage.value}`;
-      return { isChart, sheetName, rangeAddress, dataSnapshot };
+      return { 
+        isChart, 
+        sheetName, 
+        rangeAddress, 
+        dataSnapshot, 
+        chartTitle: activeChart.title.text || activeChart.name // Fallback [1]
+      };
     } catch (chartErr) {
       console.log("[DEBUG] Active chart selection failed, falling back to Range check.");
     }
@@ -498,19 +516,26 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
         const activeSheet = context.workbook.worksheets.getActiveWorksheet();
         activeSheet.load("name");
         const charts = activeSheet.charts;
-        charts.load("items/name");
+        charts.load("items/name,items/title");
         await context.sync();
 
         if (charts.items.length > 0) {
           const firstChart = charts.items[0];
           const chartImage = firstChart.getImage();
+          firstChart.title.load("text");
           await context.sync();
 
           isChart = true;
           sheetName = activeSheet.name;
           rangeAddress = firstChart.name;
           dataSnapshot = `data:image/png;base64,${chartImage.value}`;
-          return { isChart, sheetName, rangeAddress, dataSnapshot };
+          return { 
+            isChart, 
+            sheetName, 
+            rangeAddress, 
+            dataSnapshot, 
+            chartTitle: firstChart.title.text || firstChart.name 
+          };
         }
       } catch (innerErr) {}
       
@@ -565,3 +590,6 @@ export const saveMetadataToCustomXml = async (
     console.log(`[DEBUG] Successfully wrote Custom XML for Link ID: ${linkId}`);
   });
 };
+
+
+

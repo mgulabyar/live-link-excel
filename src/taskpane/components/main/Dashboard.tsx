@@ -491,9 +491,13 @@
 
 // export default Dashboard;
 
+
+
+
+
 declare const Office: any;
 declare const Excel: any;
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -537,10 +541,13 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
+  
+  // Track if a Chart is currently active to dynamically disable inputs [1]
+  const [isChartSelected, setIsChartSelected] = useState<boolean>(false);
 
-  // Safe tracking states to prevent focus deselections [1]
+  // Zero-latency selection cache ref [1]
   const [lastSelection, setLastSelection] = useState<any>(null);
-  const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
+  const isMouseInPaneRef = useRef<boolean>(false);
 
   useEffect(() => {
     let eventResult: any;
@@ -558,21 +565,19 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }).catch((err: any) => console.error("Event removal failed:", err));
       }
     };
-  }, [isInputFocused]);
+  }, []);
 
   const handleSelectionChanged = async () => {
-    // Standard Active Element focus check to prevent async race condition during typing [1]
-    const activeEl = document.activeElement;
-    const isTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.hasAttribute("contenteditable"));
-
-    if (isInputFocused || isTyping) {
-      console.log("[DEBUG] Ignoring selection change because user is typing.");
+    // Zero-latency check: Ignore Excel selection change if mouse is in pane [1]
+    if (isMouseInPaneRef.current) {
+      console.log("[DEBUG] Selection change ignored because mouse is active inside the taskpane.");
       return;
     }
 
     try {
       const selection = await getActiveSelection();
-      setLastSelection(selection); // Cache the valid selection state [1]
+      setLastSelection(selection); // Cache the selection state [1]
+      setIsChartSelected(selection.isChart); // Check if chart [1]
 
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
@@ -583,37 +588,37 @@ const Dashboard: React.FC<DashboardProps> = () => {
           if (res.success && res.data) {
             setIsRangeLinked(match.linkId);
             setMatchedRangeAddress(match.matchedRange);
-            setCustomName(res.data.componentName || "");
+            // Auto-load custom name or chart title [1]
+            setCustomName(res.data.componentName || selection.chartTitle || "");
           } else {
             setIsRangeLinked(null);
             setMatchedRangeAddress(null);
-            setCustomName("");
+            setCustomName(selection.chartTitle || "");
           }
         } catch (dbErr) {
           console.warn("MongoDB verification failed:", dbErr);
           setIsRangeLinked(null);
           setMatchedRangeAddress(null);
-          setCustomName("");
+          setCustomName(selection.chartTitle || "");
         } finally {
           setFetchingName(false);
         }
       } else {
         setIsRangeLinked(null);
         setMatchedRangeAddress(null);
-        setCustomName("");
+        setCustomName(selection.chartTitle || ""); // Map active Excel Chart Title to input [1]
       }
     } catch (e) {
-      // SILENT BYPASS: Retain the last successful selection on focus loss to prevent wipes [1]
-      console.log("[DEBUG] Focus lost, retaining last selection state:", lastSelection);
+      console.log("[DEBUG] Selection temporarily lost, retaining previous active selection.");
     }
   };
 
   const handleCreateLiveLink = async () => {
     try {
-      // Use last successful selection if Excel selection is lost on click [1]
+      // Use cached selection to bypass deselect focus-loss [1]
       const selection = matchedRangeAddress 
         ? await getActiveSelection(matchedRangeAddress) 
-        : lastSelection || await getActiveSelection();
+        : (lastSelection && lastSelection.isChart) ? lastSelection : await getActiveSelection();
 
       const type = selection.isChart ? "Chart" : "Table";
       let linkId = isRangeLinked;
@@ -651,9 +656,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
         setTimeout(async () => {
           try {
+            // If it is a chart, prioritize its own Excel Chart Title over the manual customName! [1]
+            const finalComponentName = selection.isChart ? (selection.chartTitle || customName) : customName;
+
             await registerLinkData({
               linkId: linkId!,
-              componentName: customName,
+              componentName: finalComponentName,
               excelFileId: currentUrl,
               excelFileName: fileName,
               sheetName: selection.sheetName,
@@ -761,6 +769,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   return (
     <Box
+      onMouseEnter={() => { isMouseInPaneRef.current = true; }} // Active Lock [1]
+      onMouseLeave={() => { isMouseInPaneRef.current = false; }} // Active Unlock [1]
       sx={{
         height: "100vh",
         display: "flex",
@@ -842,17 +852,15 @@ const Dashboard: React.FC<DashboardProps> = () => {
           be refreshed directly in PowerPoint.
         </Typography>
 
-        {/* Input box bottom margin reduced by 1px (mb: 1) for professional compact visual alignment */}
+        {/* Input box margin tightened by 1px (mb: 1) for professional compact visual alignment */}
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 1 }}>
           <TextField
             size="small"
-            label="Custom Name"
-            placeholder="e.g. Monthly Revenue Table"
+            label={isChartSelected ? "Chart Title (From Excel)" : "Custom Name"} // Dynamically changes labels
+            placeholder={isChartSelected ? "Define title on Excel Chart" : "e.g. Monthly Revenue Table"}
             value={customName}
-            disabled={isLinking || isUpdating || isUnlinking || fetchingName}
-            // Bind onFocus and onBlur to safely lock focus-loss deselects [1]
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setTimeout(() => setIsInputFocused(false), 300)}
+            // Disabled if it is a Chart (Forces user to set name in Excel title, preventing deselect) [1]
+            disabled={isChartSelected || isLinking || isUpdating || isUnlinking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
               width: "70%", 
@@ -922,7 +930,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               color="error"
               disabled={isUpdating || isUnlinking}
               onClick={handleUnlinkRange}
-              endIcon={isUnlinking ? <CircularProgress size={18} color="inherit" /> : <LinkOff sx={{ fontSize: 18 }} />}
+              endIcon={<LinkOff sx={{ fontSize: 18 }} />}
               sx={{
                 width: "70%", 
                 height: "44px",
