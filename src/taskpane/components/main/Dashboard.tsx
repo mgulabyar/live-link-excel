@@ -500,15 +500,11 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Snackbar,
   TextField,
   Tooltip,
 } from "@mui/material";
-import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
+import { Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
 import { registerLinkData, deleteLinkData, getLinkDetails } from "../services/api";
 import {
@@ -530,15 +526,16 @@ const Dashboard: React.FC<DashboardProps> = () => {
     text: string;
     severity: "success" | "error" | "info";
   } | null>(null);
-  const [linking, setLinking] = useState<boolean>(false);
+
+  const [isLinking, setIsLinking] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [isUnlinking, setIsUnlinking] = useState<boolean>(false);
 
   const [isRangeLinked, setIsRangeLinked] = useState<string | null>(null);
   const [matchedRangeAddress, setMatchedRangeAddress] = useState<string | null>(null);
 
-  const [customName, setCustomName] = useState<string>("a");
+  const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
-  
-  // State for locking selection events during input focus [1]
   const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
 
   useEffect(() => {
@@ -557,12 +554,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }).catch((err: any) => console.error("Event removal failed:", err));
       }
     };
-  }, [isInputFocused]); // Dependency injected
+  }, [isInputFocused]);
 
   const handleSelectionChanged = async () => {
-    // If input field is focused, completely ignore selection changes to prevent focus deselect crashes [1]
-    if (isInputFocused) {
-      console.log("[DEBUG] Selection change ignored because input is focused.");
+    const activeEl = document.activeElement;
+    const isTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.hasAttribute("contenteditable"));
+
+    if (isInputFocused || isTyping) {
+      console.log("[DEBUG] Ignoring selection change because user is actively typing.");
       return;
     }
 
@@ -571,17 +570,23 @@ const Dashboard: React.FC<DashboardProps> = () => {
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
       if (match) {
-        setIsRangeLinked(match.linkId);
-        setMatchedRangeAddress(match.matchedRange);
-
         setFetchingName(true);
         try {
           const res = await getLinkDetails(match.linkId);
           if (res.success && res.data) {
+            setIsRangeLinked(match.linkId);
+            setMatchedRangeAddress(match.matchedRange);
             setCustomName(res.data.componentName || "");
+          } else {
+            setIsRangeLinked(null);
+            setMatchedRangeAddress(null);
+            setCustomName("");
           }
         } catch (dbErr) {
-          console.error("Failed to fetch link custom name:", dbErr);
+          console.warn("MongoDB verification failed:", dbErr);
+          setIsRangeLinked(null);
+          setMatchedRangeAddress(null);
+          setCustomName("");
         } finally {
           setFetchingName(false);
         }
@@ -598,21 +603,25 @@ const Dashboard: React.FC<DashboardProps> = () => {
   };
 
   const handleCreateLiveLink = async () => {
-    setLinking(true);
+    const selection = await getActiveSelection(matchedRangeAddress || undefined);
+    const type = selection.isChart ? "Chart" : "Table";
+
+    let linkId = isRangeLinked;
+    let isNewLink = false;
+
+    if (!linkId) {
+      linkId = generateUUID();
+      isNewLink = true;
+    }
+
+    if (isNewLink) {
+      setIsLinking(true);
+    } else {
+      setIsUpdating(true);
+    }
     setStatusMessage(null);
 
     try {
-      const selection = await getActiveSelection(matchedRangeAddress || undefined);
-      const type = selection.isChart ? "Chart" : "Table";
-
-      let linkId = isRangeLinked;
-      let isNewLink = false;
-
-      if (!linkId) {
-        linkId = generateUUID();
-        isNewLink = true;
-      }
-
       Office.context.document.getFilePropertiesAsync(async (fileResult: any) => {
         const currentUrl = fileResult.value.url || "excel-local-livelink";
         const fileName = getFileNameFromUrl(currentUrl);
@@ -657,7 +666,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
               severity: "error",
             });
           } finally {
-            setLinking(false);
+            setIsLinking(false);
+            setIsUpdating(false);
           }
         }, 1500);
       });
@@ -668,13 +678,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
           err.response?.data?.message || err.message || "An error occurred while linking range.",
         severity: "error",
       });
-      setLinking(false);
+      setIsLinking(false);
+      setIsUpdating(false);
     }
   };
 
   const handleUnlinkRange = async () => {
     if (!isRangeLinked) return;
-    setLinking(true);
+    setIsUnlinking(true);
     setStatusMessage(null);
 
     try {
@@ -736,7 +747,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         severity: "error",
       });
     } finally {
-      setLinking(false);
+      setIsUnlinking(false);
     }
   };
 
@@ -751,6 +762,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         overflow: "hidden",
       }}
     >
+      {/* Clean Header with centered title and no Logout button */}
       <Box
         sx={{
           position: "sticky",
@@ -804,7 +816,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               letterSpacing: "0.3px",
             }}
           >
-            Live
+            Live Link
           </Typography>
         </Box>
 
@@ -823,14 +835,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
           be refreshed directly in PowerPoint.
         </Typography>
 
+        {/* Dynamic Naming Input Field */}
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
           <TextField
             size="small"
             label="Custom Name"
             placeholder="e.g. Monthly Revenue Table"
             value={customName}
-            disabled={linking || fetchingName}
-            // Bind onFocus and onBlur to safely lock focus-loss deselects [1]
+            disabled={isLinking || isUpdating || isUnlinking || fetchingName}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setTimeout(() => setIsInputFocused(false), 300)}
             onChange={(e) => setCustomName(e.target.value)}
@@ -855,7 +867,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 1,
+              gap: 1.5,
               width: "100%",
             }}
           >
@@ -871,10 +883,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span style={{ display: "block", width: "70%" }}>
                 <Button
                   variant="contained"
-                  disabled={linking || !customName.trim() || fetchingName}
+                  disabled={isUpdating || isUnlinking || !customName.trim() || fetchingName}
                   onClick={handleCreateLiveLink}
                   endIcon={
-                    linking ? (
+                    isUpdating ? (
                       <CircularProgress size={18} color="inherit" />
                     ) : (
                       <Sync sx={{ fontSize: 18 }} />
@@ -892,7 +904,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
                   }}
                 >
-                  {linking ? "Updating..." : "Update Data"}
+                  {isUpdating ? "Updating..." : "Update Data"}
                 </Button>
               </span>
             </Tooltip>
@@ -900,9 +912,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <Button
               variant="outlined"
               color="error"
-              disabled={linking}
+              disabled={isUpdating || isUnlinking}
               onClick={handleUnlinkRange}
-              endIcon={<LinkOff sx={{ fontSize: 18 }} />}
+              endIcon={isUnlinking ? <CircularProgress size={18} color="inherit" /> : <LinkOff sx={{ fontSize: 18 }} />}
               sx={{
                 width: "70%", 
                 height: "44px",
@@ -912,7 +924,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 fontFamily: "Segoe UI, Arial",
               }}
             >
-              Unlink Range
+              {isUnlinking ? "Unlinking..." : "Unlink Range"}
             </Button>
           </Box>
         ) : (
@@ -929,10 +941,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span style={{ display: "block", width: "70%" }}>
                 <Button
                   variant="contained"
-                  disabled={linking || !customName.trim() || fetchingName}
+                  disabled={isLinking || !customName.trim() || fetchingName}
                   onClick={handleCreateLiveLink}
                   endIcon={
-                    linking ? (
+                    isLinking ? (
                       <CircularProgress size={18} color="inherit" />
                     ) : (
                       <Send sx={{ fontSize: 18 }} />
@@ -950,7 +962,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
                   }}
                 >
-                  {linking ? "Linking..." : "Send to PowerPoint"}
+                  {isLinking ? "Linking..." : "Send to PowerPoint"}
                 </Button>
               </span>
             </Tooltip>
