@@ -804,7 +804,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               letterSpacing: "0.3px",
             }}
           >
-            Live Link
+            Live
           </Typography>
         </Box>
 
@@ -855,7 +855,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 1.5,
+              gap: 1,
               width: "100%",
             }}
           >
