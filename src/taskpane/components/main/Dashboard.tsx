@@ -5,8 +5,6 @@
 //   Box,
 //   Typography,
 //   Button,
-//   Paper,
-//   IconButton,
 //   CircularProgress,
 //   Alert,
 //   Dialog,
@@ -14,7 +12,7 @@
 //   DialogContent,
 //   DialogActions,
 // } from "@mui/material";
-// import { CloudSync, Logout, Hub, WarningAmber } from "@mui/icons-material";
+// import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
 // import { registerLinkData, deleteLinkData } from "../services/api";
 // import {
@@ -47,7 +45,7 @@
 //   }
 // };
 
-// const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
+// const Dashboard: React.FC<DashboardProps> = () => {
 //   const [statusMessage, setStatusMessage] = useState<{
 //     text: string;
 //     severity: "success" | "error" | "info";
@@ -408,7 +406,19 @@
 //         overflow: "hidden",
 //       }}
 //     >
-//       <Dialog open={showCopyPrompt} disableEscapeKeyDown>
+//       <Dialog 
+//         open={showCopyPrompt} 
+//         disableEscapeKeyDown
+//         maxWidth="xs"
+//         fullWidth
+//         PaperProps={{
+//           sx: {
+//             borderRadius: "8px",
+//             p: 1.5,
+//             boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.15)",
+//           }
+//         }}
+//       >
 //         <DialogTitle
 //           sx={{
 //             display: "flex",
@@ -493,7 +503,7 @@
 //               boxShadow: "none",
 //             }}
 //           >
-//             Reset
+//             Reset All
 //           </Button>
 //         </DialogActions>
 //       </Dialog>
@@ -508,10 +518,9 @@
 //           color: "#FFFFFF",
 //           display: "flex",
 //           alignItems: "center",
-//           justifyContent: "space-between",
+//           justifyContent: "center",
 //         }}
 //       >
-//         <Box sx={{ width: 32 }} />
 //         <Typography
 //           sx={{
 //             fontWeight: 700,
@@ -522,33 +531,6 @@
 //           }}
 //         >
 //           EXCEL TO POWERPOINT
-//         </Typography>
-//         <IconButton onClick={onLogout} size="small" sx={{ color: "#FFFFFF" }}>
-//           <Logout sx={{ fontSize: 18 }} />
-//         </IconButton>
-//       </Box>
-
-//       <Box
-//         sx={{
-//           px: 2.5,
-//           py: 1.5,
-//           bgcolor: "#F3F2F1",
-//           display: "flex",
-//           alignItems: "center",
-//           gap: 1,
-//           borderBottom: "1px solid #EDEBE9",
-//         }}
-//       >
-//         <Box sx={{ width: 8, height: 8, bgcolor: "#107C10", borderRadius: "50%" }} />
-//         <Typography
-//           sx={{
-//             fontSize: "12px",
-//             fontWeight: 700,
-//             color: "#323130",
-//             fontFamily: "Segoe UI, Arial",
-//           }}
-//         >
-//           SYNC ENGINE ACTIVE
 //         </Typography>
 //       </Box>
 
@@ -566,84 +548,45 @@
 //           scrollbarWidth: "none",
 //         }}
 //       >
-//         <Paper
-//           elevation={0}
-//           sx={{ p: 3, border: "1px solid #D1D1D1", borderRadius: "8px", textAlign: "center" }}
-//         >
-//           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
-//             <Hub sx={{ color: "#0078d4", fontSize: 24, mb: 1 }} />
-//             <Typography
-//               sx={{
-//                 fontWeight: 800,
-//                 fontSize: "16px",
-//                 color: "#323130",
-//                 fontFamily: "Segoe UI, Arial",
-//               }}
-//             >
-//               Live Data Linking
-//             </Typography>
-//           </Box>
-
+//         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}>
+//           <LinkIcon sx={{ color: "#0078d4", fontSize: 32, mb: 0.8 }} />
 //           <Typography
 //             sx={{
-//               fontSize: "13px",
-//               color: "#605E5C",
-//               lineHeight: 1.5,
-//               mb: 3.5,
+//               fontWeight: 800,
+//               fontSize: "17px",
+//               color: "#323130",
 //               fontFamily: "Segoe UI, Arial",
-//               px: 1,
+//               letterSpacing: "0.3px"
 //             }}
 //           >
-//             Select any data range or chart in your sheet to create a live link. The linked object
-//             can be refreshed directly in PowerPoint.
+//             Live Link
 //           </Typography>
+//         </Box>
 
-//           {isRangeLinked ? (
-//             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-//               <Button
-//                 variant="contained"
-//                 fullWidth
-//                 disabled={linking}
-//                 onClick={handleCreateLiveLink}
-//                 startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <CloudSync />}
-//                 sx={{
-//                   height: "44px",
-//                   bgcolor: "#0078d4",
-//                   fontWeight: 700,
-//                   textTransform: "none",
-//                   fontSize: "14px",
-//                   boxShadow: "none",
-//                   fontFamily: "Segoe UI, Arial",
-//                   "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
-//                 }}
-//               >
-//                 {linking ? "Updating Link..." : "Update PowerPoint Link"}
-//               </Button>
-//               <Button
-//                 variant="outlined"
-//                 color="error"
-//                 fullWidth
-//                 disabled={linking}
-//                 onClick={handleUnlinkRange}
-//                 sx={{
-//                   height: "44px",
-//                   fontWeight: 700,
-//                   textTransform: "none",
-//                   fontSize: "14px",
-//                   fontFamily: "Segoe UI, Arial",
-//                 }}
-//               >
-//                 Unlink Range
-//               </Button>
-//             </Box>
-//           ) : (
+//         <Typography
+//           sx={{
+//             fontSize: "13px",
+//             color: "#605E5C",
+//             lineHeight: 1.5,
+//             mb: 3.5,
+//             fontFamily: "Segoe UI, Arial",
+//             textAlign: "center",
+//             px: 1,
+//           }}
+//         >
+//           Select any data range or chart in your sheet to create a live link. The linked object
+//           can be refreshed directly in PowerPoint.
+//         </Typography>
+
+//         {isRangeLinked ? (
+//           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, width: "100%" }}>
 //             <Button
 //               variant="contained"
-//               fullWidth
 //               disabled={linking}
 //               onClick={handleCreateLiveLink}
-//               startIcon={linking ? <CircularProgress size={18} color="inherit" /> : <CloudSync />}
+//               endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />} // Unified Sync icon [1]
 //               sx={{
+//                 width: "70%",
 //                 height: "44px",
 //                 bgcolor: "#0078d4",
 //                 fontWeight: 700,
@@ -654,29 +597,63 @@
 //                 "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
 //               }}
 //             >
-//               {linking ? "Establishing Link..." : "Send to PowerPoint"}
+//               {linking ? "Updating..." : "Update Data"}
 //             </Button>
-//           )}
-
-//           {statusMessage && (
-//             <Alert
-//               severity={statusMessage.severity}
-//               sx={{ mt: 2.5, fontSize: "13px", fontFamily: "Segoe UI, Arial", textAlign: "left" }}
+//             <Button
+//               variant="outlined"
+//               color="error"
+//               disabled={linking}
+//               onClick={handleUnlinkRange}
+//               endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
+//               sx={{
+//                 width: "70%", 
+//                 height: "44px",
+//                 fontWeight: 700,
+//                 textTransform: "none",
+//                 fontSize: "14px",
+//                 fontFamily: "Segoe UI, Arial",
+//               }}
 //             >
-//               {statusMessage.text}
-//             </Alert>
-//           )}
-//         </Paper>
+//               Unlink Range
+//             </Button>
+//           </Box>
+//         ) : (
+//           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+//             <Button
+//               variant="contained"
+//               disabled={linking}
+//               onClick={handleCreateLiveLink}
+//               endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />} // Customized Send icon [1]
+//               sx={{
+//                 width: "70%", 
+//                 height: "44px",
+//                 bgcolor: "#0078d4",
+//                 fontWeight: 700,
+//                 textTransform: "none",
+//                 fontSize: "14px",
+//                 boxShadow: "none",
+//                 fontFamily: "Segoe UI, Arial",
+//                 "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+//               }}
+//             >
+//               {linking ? "Linking..." : "Send to PowerPoint"}
+//             </Button>
+//           </Box>
+//         )}
+
+//         {statusMessage && (
+//           <Alert
+//             severity={statusMessage.severity}
+//             sx={{ mt: 2.5, fontSize: "13px", fontFamily: "Segoe UI, Arial", textAlign: "left" }}
+//           >
+//             {statusMessage.text}
+//           </Alert>
+//         )}
 //       </Box>
 
-//       <Box sx={{ p: 2, textAlign: "center" }}>
+//       <Box sx={{ p: 1.5, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
 //         <Typography
-//           sx={{
-//             fontSize: "11px",
-//             color: "#A19F9D",
-//             fontWeight: 600,
-//             fontFamily: "Segoe UI, Arial",
-//           }}
+//           sx={{ fontSize: "10px", color: "#A19F9D", fontWeight: 600, fontFamily: "Segoe UI, Arial" }}
 //         >
 //           Live Linker v1.0.0
 //         </Typography>
@@ -688,6 +665,7 @@
 // export default Dashboard;
 
 
+
 declare const Office: any;
 declare const Excel: any;
 import React, { useEffect, useState } from "react";
@@ -697,14 +675,13 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Snackbar,
+  TextField,
+  Tooltip,
 } from "@mui/material";
-import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
+import { Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
-import { registerLinkData, deleteLinkData } from "../services/api";
+import { registerLinkData, deleteLinkData, getLinkDetails } from "../services/api";
 import {
   generateUUID,
   getActiveSelection,
@@ -719,36 +696,20 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-const normalizeUrl = (url: string): string => {
-  if (!url) return "";
-  try {
-    const decodedUrl = decodeURIComponent(url);
-    return decodedUrl
-      .replace(/[\\/]+/g, "/")
-      .trim()
-      .toLowerCase();
-  } catch (e) {
-    return url
-      .replace(/[\\/]+/g, "/")
-      .trim()
-      .toLowerCase();
-  }
-};
-
 const Dashboard: React.FC<DashboardProps> = () => {
   const [statusMessage, setStatusMessage] = useState<{
     text: string;
     severity: "success" | "error" | "info";
   } | null>(null);
   const [linking, setLinking] = useState<boolean>(false);
-  const [showCopyPrompt, setShowCopyPrompt] = useState<boolean>(false);
 
   const [isRangeLinked, setIsRangeLinked] = useState<string | null>(null);
   const [matchedRangeAddress, setMatchedRangeAddress] = useState<string | null>(null);
 
-  useEffect(() => {
-    checkForCopyDetection();
+  const [customName, setCustomName] = useState<string>("");
+  const [fetchingName, setFetchingName] = useState<boolean>(false);
 
+  useEffect(() => {
     let eventResult: any;
     Excel.run(async (context: any) => {
       eventResult = context.workbook.onSelectionChanged.add(handleSelectionChanged);
@@ -772,111 +733,35 @@ const Dashboard: React.FC<DashboardProps> = () => {
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
       if (match) {
-        setIsRangeLinked(match.linkId);
-        setMatchedRangeAddress(match.matchedRange);
+        setFetchingName(true);
+        try {
+          const res = await getLinkDetails(match.linkId);
+          if (res.success && res.data) {
+            setIsRangeLinked(match.linkId);
+            setMatchedRangeAddress(match.matchedRange);
+            setCustomName(res.data.componentName || "");
+          } else {
+            setIsRangeLinked(null);
+            setMatchedRangeAddress(null);
+            setCustomName("");
+          }
+        } catch (dbErr) {
+          console.warn("MongoDB verification failed:", dbErr);
+          setIsRangeLinked(null);
+          setMatchedRangeAddress(null);
+          setCustomName("");
+        } finally {
+          setFetchingName(false);
+        }
       } else {
         setIsRangeLinked(null);
         setMatchedRangeAddress(null);
+        setCustomName("");
       }
     } catch (e) {
       setIsRangeLinked(null);
       setMatchedRangeAddress(null);
-    }
-  };
-
-  const checkForCopyDetection = async () => {
-    try {
-      Office.context.document.getFilePropertiesAsync(async (fileResult: any) => {
-        const currentUrl = fileResult.value.url || "LocalWorkbook";
-
-        await Excel.run(async (context: any) => {
-          const parts = context.workbook.customXmlParts;
-          parts.load("items");
-          await context.sync();
-
-          const xmlBlobs = parts.items.map((part: any) => {
-            return {
-              xmlBlob: part.getXml(),
-            };
-          });
-          await context.sync();
-
-          let copyDetected = false;
-          const parser = new DOMParser();
-
-          for (let item of xmlBlobs) {
-            const xmlText = item.xmlBlob.value;
-
-            if (xmlText && xmlText.includes("LiveLink")) {
-              const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-              const savedUrl = xmlDoc.getElementsByTagName("FileId")[0]?.textContent || "";
-
-              if (
-                savedUrl &&
-                savedUrl !== "excel-local-livelink" &&
-                normalizeUrl(savedUrl) !== normalizeUrl(currentUrl)
-              ) {
-                copyDetected = true;
-              }
-            }
-          }
-
-          if (copyDetected) {
-            setShowCopyPrompt(true);
-          }
-        });
-      });
-    } catch (err) {
-      console.error("Error scanning copy detection properties:", err);
-    }
-  };
-
-  const handleKeepLinks = async () => {
-    try {
-      setLinking(true);
-      Office.context.document.getFilePropertiesAsync(async (fileResult: any) => {
-        const currentUrl = fileResult.value.url || "LocalWorkbook";
-
-        await Excel.run(async (context: any) => {
-          const parts = context.workbook.customXmlParts;
-          parts.load("items");
-          await context.sync();
-
-          const xmlBlobs = parts.items.map((part: any) => ({
-            part: part,
-            xmlBlob: part.getXml(),
-          }));
-          await context.sync();
-
-          const parser = new DOMParser();
-          for (let item of xmlBlobs) {
-            const xmlText = item.xmlBlob.value;
-            if (xmlText && xmlText.includes("LiveLink")) {
-              const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-              const linkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
-              const sheetName = xmlDoc.getElementsByTagName("SheetName")[0]?.textContent || "";
-              const rangeAddress =
-                xmlDoc.getElementsByTagName("RangeAddress")[0]?.textContent || "";
-              const type = xmlDoc.getElementsByTagName("Type")[0]?.textContent || "Table";
-
-              const newXmlString = `<LiveLink><LinkId>${linkId}</LinkId><FileId>${currentUrl}</FileId><SheetName>${sheetName}</SheetName><RangeAddress>${rangeAddress}</RangeAddress><Type>${type}</Type></LiveLink>`;
-              item.part.delete();
-              context.workbook.customXmlParts.add(newXmlString);
-            }
-          }
-
-          await context.sync();
-          setShowCopyPrompt(false);
-          setLinking(false);
-          setStatusMessage({
-            text: "Excel links successfully mapped to this new copy.",
-            severity: "success",
-          });
-        });
-      });
-    } catch (err) {
-      console.error("Error keeping links:", err);
-      setLinking(false);
+      setCustomName("");
     }
   };
 
@@ -918,6 +803,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           try {
             await registerLinkData({
               linkId: linkId!,
+              componentName: customName,
               excelFileId: currentUrl,
               excelFileName: fileName,
               sheetName: selection.sheetName,
@@ -1006,6 +892,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
       setIsRangeLinked(null);
       setMatchedRangeAddress(null);
+      setCustomName("");
       setStatusMessage({
         text: "Link deleted successfully!.",
         severity: "success",
@@ -1021,70 +908,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
     }
   };
 
-  const handleResetTemplate = async () => {
-    try {
-      setLinking(true);
-      await Excel.run(async (context: any) => {
-        const parts = context.workbook.customXmlParts;
-        parts.load("items");
-        await context.sync();
-
-        const xmlBlobs = parts.items.map((part: any) => {
-          return {
-            part: part,
-            xmlBlob: part.getXml(),
-          };
-        });
-        await context.sync();
-
-        const parser = new DOMParser();
-        for (let item of xmlBlobs) {
-          try {
-            const xmlText = item.xmlBlob.value;
-            if (xmlText && xmlText.includes("LiveLink")) {
-              const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-              const sheetName = xmlDoc.getElementsByTagName("SheetName")[0]?.textContent || "";
-              const rangeAddress =
-                xmlDoc.getElementsByTagName("RangeAddress")[0]?.textContent || "";
-              const type = xmlDoc.getElementsByTagName("Type")[0]?.textContent || "Table";
-              const linkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
-
-              if (type === "Table" && sheetName && rangeAddress) {
-                await clearExcelRangeFormat(sheetName, rangeAddress);
-              }
-
-              try {
-                await deleteLinkData(linkId);
-              } catch (dbErr) {
-                console.warn(
-                  "MongoDB unlink failed during reset, proceeding with local clear:",
-                  dbErr
-                );
-              }
-
-              item.part.delete();
-            }
-          } catch (innerErr) {
-            console.error("Failed to reset single XML Part:", innerErr);
-          }
-        }
-
-        await context.sync();
-        setShowCopyPrompt(false);
-        setIsRangeLinked(null);
-        setMatchedRangeAddress(null);
-        setLinking(false);
-        setStatusMessage({
-          text: "Template reset completed.",
-          severity: "success",
-        });
-      });
-    } catch (err) {
-      console.error("Error resetting template:", err);
-      setLinking(false);
-    }
-  };
-
   return (
     <Box
       sx={{
@@ -1096,108 +919,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         overflow: "hidden",
       }}
     >
-      <Dialog 
-        open={showCopyPrompt} 
-        disableEscapeKeyDown
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: "8px",
-            p: 1.5,
-            boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.15)",
-          }
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            color: "#d32f2f",
-            fontWeight: 800,
-            fontFamily: "Segoe UI, Arial",
-            p: 1.5,
-            fontSize: "18px",
-          }}
-        >
-          <WarningAmber sx={{ fontSize: "24px" }} /> File Copy Detected
-        </DialogTitle>
-        <DialogContent sx={{ p: 1.5, overflowY: "hidden" }}>
-          <Typography
-            variant="body2"
-            sx={{
-              lineHeight: 1.6,
-              color: "#323130",
-              fontFamily: "Segoe UI, Arial",
-              fontSize: "13.5px",
-            }}
-          >
-            This workbook appears to be duplicated from an existing live-linked report template.
-            Please choose how to proceed:
-          </Typography>
-          <Box sx={{ mt: 2.5, display: "flex", flexDirection: "column", gap: 1.5 }}>
-            <Typography
-              sx={{
-                fontFamily: "Segoe UI, Arial",
-                fontSize: "12.5px",
-                color: "#605E5C",
-                lineHeight: 1.5,
-              }}
-            >
-              • <strong>Keep Links (Option A):</strong> Map connections to this new file copy [1].
-            </Typography>
-            <Typography
-              sx={{
-                fontFamily: "Segoe UI, Arial",
-                fontSize: "12.5px",
-                color: "#605E5C",
-                lineHeight: 1.5,
-              }}
-            >
-              • <strong>Reset Template (Option B):</strong> Wipe all metadata to connect this copy
-              to a new PowerPoint deck [1].
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 1.5, justifyContent: "space-between", gap: 1 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleKeepLinks}
-            disabled={linking}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              fontFamily: "Segoe UI, Arial",
-              height: "36px",
-              px: 2,
-              fontSize: "13px",
-            }}
-          >
-            Keep Links
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            size="small"
-            onClick={handleResetTemplate}
-            disabled={linking}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              fontFamily: "Segoe UI, Arial",
-              height: "36px",
-              px: 2,
-              fontSize: "13px",
-              boxShadow: "none",
-            }}
-          >
-            Reset All
-          </Button>
-        </DialogActions>
-      </Dialog>
-
+      {/* Clean Header with centered title and no Logout button */}
       <Box
         sx={{
           position: "sticky",
@@ -1238,7 +960,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
           scrollbarWidth: "none",
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}>
+        <Box
+          sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}
+        >
           <LinkIcon sx={{ color: "#0078d4", fontSize: 32, mb: 0.8 }} />
           <Typography
             sx={{
@@ -1246,7 +970,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               fontSize: "17px",
               color: "#323130",
               fontFamily: "Segoe UI, Arial",
-              letterSpacing: "0.3px"
+              letterSpacing: "0.3px",
             }}
           >
             Live Link
@@ -1258,43 +982,95 @@ const Dashboard: React.FC<DashboardProps> = () => {
             fontSize: "13px",
             color: "#605E5C",
             lineHeight: 1.5,
-            mb: 3.5,
+            mb: 2.5,
             fontFamily: "Segoe UI, Arial",
             textAlign: "center",
             px: 1,
           }}
         >
-          Select any data range or chart in your sheet to create a live link. The linked object
-          can be refreshed directly in PowerPoint.
+          Select any data range or chart in your sheet to create a live link. The linked object can
+          be refreshed directly in PowerPoint.
         </Typography>
 
-        {isRangeLinked ? (
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5, width: "100%" }}>
-            <Button
-              variant="contained"
-              disabled={linking}
-              onClick={handleCreateLiveLink}
-              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Sync sx={{ fontSize: 18 }} />} // Unified Sync icon [1]
-              sx={{
-                width: "70%",
-                height: "44px",
-                bgcolor: "#0078d4",
-                fontWeight: 700,
-                textTransform: "none",
-                fontSize: "14px",
-                boxShadow: "none",
+        {/* Dynamic Naming Input Field [1] */}
+        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+          <TextField
+            size="small"
+            label="Custom Name"
+            placeholder="e.g. Monthly Revenue Table"
+            value={customName}
+            disabled={linking || fetchingName}
+            onChange={(e) => setCustomName(e.target.value)}
+            sx={{
+              width: "70%", // Matched perfectly to button's 70% width! [1]
+              "& .MuiOutlinedInput-root": {
+                height: "44px", // Matched perfectly to button's 44px height! [1]
+                fontSize: "13px",
                 fontFamily: "Segoe UI, Arial",
-                "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
-              }}
+              },
+              "& .MuiInputLabel-root": { fontSize: "13px", fontFamily: "Segoe UI, Arial" },
+            }}
+            InputProps={{
+              endAdornment: fetchingName && <CircularProgress size={16} color="inherit" />,
+            }}
+          />
+        </Box>
+
+        {isRangeLinked ? (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1.5,
+              width: "100%",
+            }}
+          >
+            <Tooltip
+              title={
+                !customName.trim()
+                  ? "Please enter a custom name to update."
+                  : "Update data on slide"
+              }
+              arrow
+              placement="top"
             >
-              {linking ? "Updating..." : "Update Data"}
-            </Button>
+              {/* FIXED: Span and Button widths are dynamically nested at 70% and 100% to guarantee perfect centering [1] */}
+              <span style={{ display: "block", width: "70%" }}>
+                <Button
+                  variant="contained"
+                  disabled={linking || !customName.trim() || fetchingName}
+                  onClick={handleCreateLiveLink}
+                  endIcon={
+                    linking ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <Sync sx={{ fontSize: 18 }} />
+                    )
+                  }
+                  sx={{
+                    width: "100%", 
+                    height: "44px",
+                    bgcolor: "#0078d4",
+                    fontWeight: 700,
+                    textTransform: "none",
+                    fontSize: "14px",
+                    boxShadow: "none",
+                    fontFamily: "Segoe UI, Arial",
+                    "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+                  }}
+                >
+                  {linking ? "Updating..." : "Update Data"}
+                </Button>
+              </span>
+            </Tooltip>
+
             <Button
               variant="outlined"
               color="error"
               disabled={linking}
               onClick={handleUnlinkRange}
-              endIcon={<LinkOff sx={{ fontSize: 18 }} />} 
+              endIcon={<LinkOff sx={{ fontSize: 18 }} />}
               sx={{
                 width: "70%", 
                 height: "44px",
@@ -1308,42 +1084,74 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </Button>
           </Box>
         ) : (
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <Button
-              variant="contained"
-              disabled={linking}
-              onClick={handleCreateLiveLink}
-              endIcon={linking ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />} // Customized Send icon [1]
-              sx={{
-                width: "70%", 
-                height: "44px",
-                bgcolor: "#0078d4",
-                fontWeight: 700,
-                textTransform: "none",
-                fontSize: "14px",
-                boxShadow: "none",
-                fontFamily: "Segoe UI, Arial",
-                "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
-              }}
-            >
-              {linking ? "Linking..." : "Send to PowerPoint"}
-            </Button>
-          </Box>
-        )}
-
-        {statusMessage && (
-          <Alert
-            severity={statusMessage.severity}
-            sx={{ mt: 2.5, fontSize: "13px", fontFamily: "Segoe UI, Arial", textAlign: "left" }}
+          <Box
+            sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
           >
-            {statusMessage.text}
-          </Alert>
+            <Tooltip
+              title={
+                !customName.trim() ? "Please enter a custom name first." : "Send snapshot to slide"
+              }
+              arrow
+              placement="top"
+            >
+              {/* FIXED: Span and Button widths are dynamically nested at 70% and 100% to guarantee perfect centering [1] */}
+              <span style={{ display: "block", width: "70%" }}>
+                <Button
+                  variant="contained"
+                  disabled={linking || !customName.trim() || fetchingName}
+                  onClick={handleCreateLiveLink}
+                  endIcon={
+                    linking ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <Send sx={{ fontSize: 18 }} />
+                    )
+                  }
+                  sx={{
+                    width: "100%", 
+                    height: "44px",
+                    bgcolor: "#0078d4",
+                    fontWeight: 700,
+                    textTransform: "none",
+                    fontSize: "14px",
+                    boxShadow: "none",
+                    fontFamily: "Segoe UI, Arial",
+                    "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+                  }}
+                >
+                  {linking ? "Linking..." : "Send to PowerPoint"}
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
         )}
       </Box>
 
+      <Snackbar
+        open={statusMessage !== null}
+        autoHideDuration={2000}
+        onClose={() => setStatusMessage(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        {statusMessage ? (
+          <Alert
+            onClose={() => setStatusMessage(null)}
+            severity={statusMessage.severity}
+            sx={{ width: "100%", fontSize: "13px", fontFamily: "Segoe UI, Arial" }}
+          >
+            {statusMessage.text}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
+
       <Box sx={{ p: 1.5, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
         <Typography
-          sx={{ fontSize: "10px", color: "#A19F9D", fontWeight: 600, fontFamily: "Segoe UI, Arial" }}
+          sx={{
+            fontSize: "10px",
+            color: "#A19F9D",
+            fontWeight: 600,
+            fontFamily: "Segoe UI, Arial",
+          }}
         >
           Live Linker v1.0.0
         </Typography>
