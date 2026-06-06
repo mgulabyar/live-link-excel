@@ -491,6 +491,7 @@
 
 // export default Dashboard;
 
+
 declare const Office: any;
 declare const Excel: any;
 import React, { useEffect, useState } from "react";
@@ -527,6 +528,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     severity: "success" | "error" | "info";
   } | null>(null);
 
+  // Independent button loader states to prevent UI locks
   const [isLinking, setIsLinking] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isUnlinking, setIsUnlinking] = useState<boolean>(false);
@@ -536,7 +538,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
-  const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
+  
+  // Safe Mouse-Enter State Lock to completely bypass async focus race conditions [1]
+  const [isMouseInPane, setIsMouseInPane] = useState<boolean>(false);
 
   useEffect(() => {
     let eventResult: any;
@@ -554,14 +558,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }).catch((err: any) => console.error("Event removal failed:", err));
       }
     };
-  }, [isInputFocused]);
+  }, [isMouseInPane]); // State dependency added [1]
 
   const handleSelectionChanged = async () => {
-    const activeEl = document.activeElement;
-    const isTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.hasAttribute("contenteditable"));
-
-    if (isInputFocused || isTyping) {
-      console.log("[DEBUG] Ignoring selection change because user is actively typing.");
+    // If mouse is inside taskpane, completely ignore selection changes from Excel [1]
+    if (isMouseInPane) {
+      console.log("[DEBUG] Selection change ignored because mouse is active inside the taskpane.");
       return;
     }
 
@@ -737,7 +739,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       setMatchedRangeAddress(null);
       setCustomName("");
       setStatusMessage({
-        text: "Link deleted successfully!.",
+        text: "Link deleted successfully!",
         severity: "success",
       });
     } catch (err: any) {
@@ -753,6 +755,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   return (
     <Box
+      onMouseEnter={() => setIsMouseInPane(true)} // Slide Focus Lock [1]
+      onMouseLeave={() => setIsMouseInPane(false)} // Selection unlock [1]
       sx={{
         height: "100vh",
         display: "flex",
@@ -762,7 +766,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
         overflow: "hidden",
       }}
     >
-      {/* Clean Header with centered title and no Logout button */}
       <Box
         sx={{
           position: "sticky",
@@ -813,7 +816,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               fontSize: "17px",
               color: "#323130",
               fontFamily: "Segoe UI, Arial",
-              letterSpacing: "0.3px",
+              letterSpacing: "0.3px"
             }}
           >
             Live Link
@@ -835,16 +838,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
           be refreshed directly in PowerPoint.
         </Typography>
 
-        {/* Dynamic Naming Input Field */}
-        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+        {/* Input box margin tighted from mb: 2 to mb: 1 to resolve the clunky layout vertical gap */}
+        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 1 }}>
           <TextField
             size="small"
             label="Custom Name"
             placeholder="e.g. Monthly Revenue Table"
             value={customName}
             disabled={isLinking || isUpdating || isUnlinking || fetchingName}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setTimeout(() => setIsInputFocused(false), 300)}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
               width: "70%", 

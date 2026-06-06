@@ -352,7 +352,6 @@ export const getExistingLinkId = async (
     const cleanSheet = sheetName.trim().toLowerCase();
     const cleanRange = rangeAddress.trim().toLowerCase();
 
-    // 1. Direct Range & Chart exact name matching [1]
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value; 
@@ -388,7 +387,6 @@ export const getExistingLinkId = async (
       }
     }
 
-    // 2. Fallback: Agar cells select hain par sheet par koi linked Chart majood hai [1]
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value;
@@ -400,7 +398,6 @@ export const getExistingLinkId = async (
           const savedType = (xmlDoc.getElementsByTagName("Type")[0]?.textContent || "").trim();
 
           if (savedSheet === cleanSheet && savedType === "Chart") {
-            // Sheet matches and has a linked Chart. Activate Update/Unlink mode for Chart! [1]
             return {
               linkId: savedLinkId,
               matchedRange: savedRange
@@ -432,6 +429,25 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
       const activeSheet = context.workbook.worksheets.getActiveWorksheet();
       activeSheet.load("name");
       await context.sync();
+
+      // Check if target is a Chart name to safely prevent getRange crashes [1]
+      if (!isCoordinates(targetRange)) {
+        const charts = activeSheet.charts;
+        charts.load("items/name");
+        await context.sync();
+
+        const targetChart = charts.items.find((c: any) => c.name.toLowerCase() === targetRange.toLowerCase());
+        if (targetChart) {
+          const chartImage = targetChart.getImage();
+          await context.sync();
+
+          isChart = true;
+          sheetName = activeSheet.name;
+          rangeAddress = targetRange;
+          dataSnapshot = `data:image/png;base64,${chartImage.value}`;
+          return { isChart, sheetName, rangeAddress, dataSnapshot };
+        }
+      }
 
       const range = activeSheet.getRange(targetRange);
       range.load("address");
