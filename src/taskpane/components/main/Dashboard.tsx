@@ -494,7 +494,7 @@
 
 declare const Office: any;
 declare const Excel: any;
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -528,7 +528,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
     severity: "success" | "error" | "info";
   } | null>(null);
 
-  // Independent button loader states to prevent UI locks
   const [isLinking, setIsLinking] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isUnlinking, setIsUnlinking] = useState<boolean>(false);
@@ -538,9 +537,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
-  
-  // Safe Mouse-Enter State Lock to completely bypass async focus race conditions [1]
-  const [isMouseInPane, setIsMouseInPane] = useState<boolean>(false);
+  const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
+
+  // Refs to prevent stale closures and lost selections during focus shifts
+  const isInputFocusedRef = useRef<boolean>(false);
+  const lastSelectionRef = useRef<any>(null);
 
   useEffect(() => {
     let eventResult: any;
@@ -558,17 +559,25 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }).catch((err: any) => console.error("Event removal failed:", err));
       }
     };
-  }, [isMouseInPane]); // State dependency added [1]
+  }, []); // Run once on mount to establish a persistent listener
 
   const handleSelectionChanged = async () => {
-    // If mouse is inside taskpane, completely ignore selection changes from Excel [1]
-    if (isMouseInPane) {
-      console.log("[DEBUG] Selection change ignored because mouse is active inside the taskpane.");
+    const activeEl = document.activeElement;
+    const isTyping = activeEl && (
+      activeEl.tagName === "INPUT" || 
+      activeEl.tagName === "TEXTAREA" || 
+      activeEl.hasAttribute("contenteditable")
+    );
+
+    if (isInputFocusedRef.current || isTyping) {
+      console.log("[DEBUG] Ignoring selection change because user is actively typing.");
       return;
     }
 
     try {
       const selection = await getActiveSelection();
+      lastSelectionRef.current = selection; // Save selection to cache
+
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
       if (match) {
@@ -598,16 +607,29 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setCustomName("");
       }
     } catch (e) {
-      setIsRangeLinked(null);
-      setMatchedRangeAddress(null);
-      setCustomName("");
+      // Do not clear the state on focus loss errors to avoid resetting taskpane UI
+      console.log("[DEBUG] Selection fetch failed or ignored:", e);
     }
   };
 
   const handleCreateLiveLink = async () => {
-    const selection = await getActiveSelection(matchedRangeAddress || undefined);
-    const type = selection.isChart ? "Chart" : "Table";
+    let selection;
+    try {
+      // Fixed: Explicit conversion of 'string | null' to 'string | undefined' using ??
+      selection = await getActiveSelection(matchedRangeAddress ?? undefined);
+    } catch (e) {
+      if (lastSelectionRef.current) {
+        selection = lastSelectionRef.current;
+      } else {
+        setStatusMessage({
+          text: "No active selection detected.",
+          severity: "error",
+        });
+        return;
+      }
+    }
 
+    const type = selection.isChart ? "Chart" : "Table";
     let linkId = isRangeLinked;
     let isNewLink = false;
 
@@ -634,7 +656,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
             linkId!,
             selection.sheetName,
             selection.rangeAddress,
-            type
+            type,
+            selection.chartSourceRange
           );
 
           if (!selection.isChart) {
@@ -691,8 +714,30 @@ const Dashboard: React.FC<DashboardProps> = () => {
     setStatusMessage(null);
 
     try {
-      const targetRangeToUnlink = matchedRangeAddress || (await getActiveSelection()).rangeAddress;
-      const selection = await getActiveSelection(targetRangeToUnlink);
+      // Fixed: Explicit type definition and safe parsing
+      let targetRangeToUnlink: string | undefined = matchedRangeAddress ?? undefined;
+      if (!targetRangeToUnlink) {
+        try {
+          targetRangeToUnlink = (await getActiveSelection()).rangeAddress;
+        } catch (e) {
+          if (lastSelectionRef.current) {
+            targetRangeToUnlink = lastSelectionRef.current.rangeAddress;
+          } else {
+            throw e;
+          }
+        }
+      }
+
+      let selection;
+      try {
+        selection = await getActiveSelection(targetRangeToUnlink);
+      } catch (e) {
+        if (lastSelectionRef.current) {
+          selection = lastSelectionRef.current;
+        } else {
+          throw e;
+        }
+      }
 
       await Excel.run(async (context: any) => {
         const parts = context.workbook.customXmlParts;
@@ -739,7 +784,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       setMatchedRangeAddress(null);
       setCustomName("");
       setStatusMessage({
-        text: "Link deleted successfully!",
+        text: "Link deleted successfully!.",
         severity: "success",
       });
     } catch (err: any) {
@@ -755,8 +800,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   return (
     <Box
-      onMouseEnter={() => setIsMouseInPane(true)} // Slide Focus Lock [1]
-      onMouseLeave={() => setIsMouseInPane(false)} // Selection unlock [1]
       sx={{
         height: "100vh",
         display: "flex",
@@ -771,7 +814,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           position: "sticky",
           top: 0,
           zIndex: 100,
-          p: 2,
+          p: 1.5, 
           bgcolor: "#0078d4",
           color: "#FFFFFF",
           display: "flex",
@@ -782,7 +825,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: "16px",
+            fontSize: "15px", 
             letterSpacing: "0.5px",
             fontFamily: "Segoe UI, Arial",
             textAlign: "center",
@@ -794,12 +837,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
       <Box
         sx={{
-          p: 2,
+          p: 1.8, 
           flex: 1,
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
-          gap: 2,
+          gap: 1.8, 
           maxHeight: "95vh",
           "&::-webkit-scrollbar": { display: "none" },
           msOverflowStyle: "none",
@@ -807,16 +850,16 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }}
       >
         <Box
-          sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3.5, mt: 1 }}
+          sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2.5, mt: 0 }}
         >
-          <LinkIcon sx={{ color: "#0078d4", fontSize: 32, mb: 0.8 }} />
+          <LinkIcon sx={{ color: "#0078d4", fontSize: 30, mb: 0.5 }} />
           <Typography
             sx={{
               fontWeight: 800,
-              fontSize: "17px",
+              fontSize: "16px",
               color: "#323130",
               fontFamily: "Segoe UI, Arial",
-              letterSpacing: "0.3px"
+              letterSpacing: "0.3px",
             }}
           >
             Live Link
@@ -825,10 +868,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
         <Typography
           sx={{
-            fontSize: "13px",
+            fontSize: "12.5px",
             color: "#605E5C",
-            lineHeight: 1.5,
-            mb: 2.5,
+            lineHeight: 1.45,
+            mb: 1.5, 
             fontFamily: "Segoe UI, Arial",
             textAlign: "center",
             px: 1,
@@ -838,7 +881,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
           be refreshed directly in PowerPoint.
         </Typography>
 
-        {/* Input box margin tighted from mb: 2 to mb: 1 to resolve the clunky layout vertical gap */}
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 1 }}>
           <TextField
             size="small"
@@ -846,11 +888,21 @@ const Dashboard: React.FC<DashboardProps> = () => {
             placeholder="e.g. Monthly Revenue Table"
             value={customName}
             disabled={isLinking || isUpdating || isUnlinking || fetchingName}
+            onFocus={() => {
+              isInputFocusedRef.current = true;
+              setIsInputFocused(true);
+            }}
+            onBlur={() => {
+              setTimeout(() => {
+                isInputFocusedRef.current = false;
+                setIsInputFocused(false);
+              }, 300);
+            }}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
               width: "70%", 
               "& .MuiOutlinedInput-root": {
-                height: "44px", 
+                height: "42px", 
                 fontSize: "13px",
                 fontFamily: "Segoe UI, Arial",
               },
@@ -868,7 +920,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 1.5,
+              gap: 1.3,
               width: "100%",
             }}
           >
@@ -895,11 +947,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   }
                   sx={{
                     width: "100%", 
-                    height: "44px",
+                    height: "42px", 
                     bgcolor: "#0078d4",
                     fontWeight: 700,
                     textTransform: "none",
-                    fontSize: "14px",
+                    fontSize: "13.5px",
                     boxShadow: "none",
                     fontFamily: "Segoe UI, Arial",
                     "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
@@ -918,10 +970,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
               endIcon={isUnlinking ? <CircularProgress size={18} color="inherit" /> : <LinkOff sx={{ fontSize: 18 }} />}
               sx={{
                 width: "70%", 
-                height: "44px",
+                height: "42px", 
                 fontWeight: 700,
                 textTransform: "none",
-                fontSize: "14px",
+                fontSize: "13.5px",
                 fontFamily: "Segoe UI, Arial",
               }}
             >
@@ -953,11 +1005,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   }
                   sx={{
                     width: "100%", 
-                    height: "44px",
+                    height: "42px", 
                     bgcolor: "#0078d4",
                     fontWeight: 700,
                     textTransform: "none",
-                    fontSize: "14px",
+                    fontSize: "13.5px",
                     boxShadow: "none",
                     fontFamily: "Segoe UI, Arial",
                     "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
@@ -988,7 +1040,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         ) : undefined}
       </Snackbar>
 
-      <Box sx={{ p: 1.5, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
+      <Box sx={{ p: 1, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
         <Typography
           sx={{
             fontSize: "10px",

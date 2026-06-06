@@ -331,6 +331,65 @@ const isCoordinates = (str: string): boolean => {
   return /^[A-Z]+[0-9]+(:[A-Z]+[0-9]+)?$/i.test(str.replace(/[$]/g, ""));
 };
 
+// Safe helper to extract chart series data range bounding box
+const getChartSourceRange = async (chart: any, context: any): Promise<string> => {
+  try {
+    const seriesCollection = chart.series;
+    seriesCollection.load("items");
+    await context.sync();
+    
+    if (seriesCollection.items.length > 0) {
+      const firstSeries = seriesCollection.items[0];
+      const valuesSource = firstSeries.getDimensionDataSourceString("Values");
+      let categoriesSource = null;
+      try {
+        categoriesSource = firstSeries.getDimensionDataSourceString("Categories");
+      } catch (e) {}
+      
+      await context.sync();
+      
+      const parseAddress = (src: string) => {
+        if (!src) return "";
+        const parts = src.split("!");
+        const addr = parts[parts.length - 1];
+        return addr.replace(/[$]/g, "");
+      };
+
+      const valAddr = parseAddress(valuesSource.value);
+      const catAddr = categoriesSource ? parseAddress(categoriesSource.value) : "";
+      
+      if (valAddr && catAddr) {
+        if (isCoordinates(valAddr) && isCoordinates(catAddr)) {
+          const rect1 = parseRangeAddress(valAddr);
+          const rect2 = parseRangeAddress(catAddr);
+          const startRow = Math.min(rect1.startRow, rect2.startRow);
+          const endRow = Math.max(rect1.endRow, rect2.endRow);
+          const startCol = Math.min(rect1.startCol, rect2.startCol);
+          const endCol = Math.max(rect1.endCol, rect2.endCol);
+          
+          const numberToColLetter = (col: number): string => {
+            let temp = col;
+            let letter = "";
+            while (temp > 0) {
+              const modulo = (temp - 1) % 26;
+              letter = String.fromCharCode(65 + modulo) + letter;
+              temp = Math.floor((temp - modulo) / 26);
+            }
+            return letter;
+          };
+          
+          return `${numberToColLetter(startCol)}${startRow}:${numberToColLetter(endCol)}${endRow}`;
+        }
+        return valAddr;
+      }
+      return valAddr || "";
+    }
+  } catch (err) {
+    console.warn("Failed to get chart source range:", err);
+  }
+  return "";
+};
+
 export const getExistingLinkId = async (
   sheetName: string,
   rangeAddress: string
@@ -352,6 +411,7 @@ export const getExistingLinkId = async (
     const cleanSheet = sheetName.trim().toLowerCase();
     const cleanRange = rangeAddress.trim().toLowerCase();
 
+    // 1. Direct Range & Chart intersecting coordinate matching
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value; 
@@ -360,6 +420,8 @@ export const getExistingLinkId = async (
           const savedSheet = (xmlDoc.getElementsByTagName("SheetName")[0]?.textContent || "").trim().toLowerCase();
           const savedRange = (xmlDoc.getElementsByTagName("RangeAddress")[0]?.textContent || "").trim().toLowerCase();
           const savedLinkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
+          const savedType = (xmlDoc.getElementsByTagName("Type")[0]?.textContent || "").trim();
+          const savedChartSource = (xmlDoc.getElementsByTagName("ChartSourceRange")[0]?.textContent || "").trim().toLowerCase();
 
           if (savedSheet === cleanSheet) {
             if (savedRange === cleanRange) {
@@ -369,15 +431,27 @@ export const getExistingLinkId = async (
               };
             }
 
-            if (isCoordinates(savedRange) && isCoordinates(cleanRange)) {
-              const savedRect = parseRangeAddress(savedRange);
-              const currentRect = parseRangeAddress(cleanRange);
+            if (isCoordinates(cleanRange)) {
+              if (savedType !== "Chart" && isCoordinates(savedRange)) {
+                const savedRect = parseRangeAddress(savedRange);
+                const currentRect = parseRangeAddress(cleanRange);
 
-              if (rangesIntersect(currentRect, savedRect)) {
-                return {
-                  linkId: savedLinkId,
-                  matchedRange: savedRange
-                };
+                if (rangesIntersect(currentRect, savedRect)) {
+                  return {
+                    linkId: savedLinkId,
+                    matchedRange: savedRange
+                  };
+                }
+              } else if (savedType === "Chart" && savedChartSource && isCoordinates(savedChartSource)) {
+                const chartSourceRect = parseRangeAddress(savedChartSource);
+                const currentRect = parseRangeAddress(cleanRange);
+
+                if (rangesIntersect(currentRect, chartSourceRect)) {
+                  return {
+                    linkId: savedLinkId,
+                    matchedRange: savedRange
+                  };
+                }
               }
             }
           }
@@ -387,6 +461,7 @@ export const getExistingLinkId = async (
       }
     }
 
+    // 2. Fallback check for sheet and source matching
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value;
@@ -396,12 +471,26 @@ export const getExistingLinkId = async (
           const savedRange = (xmlDoc.getElementsByTagName("RangeAddress")[0]?.textContent || "").trim().toLowerCase();
           const savedLinkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
           const savedType = (xmlDoc.getElementsByTagName("Type")[0]?.textContent || "").trim();
+          const savedChartSource = (xmlDoc.getElementsByTagName("ChartSourceRange")[0]?.textContent || "").trim().toLowerCase();
 
           if (savedSheet === cleanSheet && savedType === "Chart") {
-            return {
-              linkId: savedLinkId,
-              matchedRange: savedRange
-            };
+            if (savedChartSource) {
+              if (isCoordinates(cleanRange) && isCoordinates(savedChartSource)) {
+                const chartSourceRect = parseRangeAddress(savedChartSource);
+                const currentRect = parseRangeAddress(cleanRange);
+                if (rangesIntersect(currentRect, chartSourceRect)) {
+                  return {
+                    linkId: savedLinkId,
+                    matchedRange: savedRange
+                  };
+                }
+              }
+            } else {
+              return {
+                linkId: savedLinkId,
+                matchedRange: savedRange
+              };
+            }
           }
         }
       } catch (e) {
@@ -418,35 +507,37 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
   sheetName: string;
   rangeAddress: string;
   dataSnapshot: any;
+  chartSourceRange?: string;
 }> => {
   return await Excel.run(async (context: any) => {
     let isChart = false;
     let sheetName = "";
     let rangeAddress = "";
     let dataSnapshot: any = null;
+    let chartSourceRange = "";
 
     if (targetRange) {
       const activeSheet = context.workbook.worksheets.getActiveWorksheet();
       activeSheet.load("name");
       await context.sync();
 
-      // Check if target is a Chart name to safely prevent getRange crashes [1]
-      if (!isCoordinates(targetRange)) {
-        const charts = activeSheet.charts;
-        charts.load("items/name");
+      // Check if targetRange is a chart name on this sheet
+      try {
+        const chart = activeSheet.charts.getItem(targetRange);
+        chart.load("name");
         await context.sync();
 
-        const targetChart = charts.items.find((c: any) => c.name.toLowerCase() === targetRange.toLowerCase());
-        if (targetChart) {
-          const chartImage = targetChart.getImage();
-          await context.sync();
+        const chartImage = chart.getImage();
+        chartSourceRange = await getChartSourceRange(chart, context);
+        await context.sync();
 
-          isChart = true;
-          sheetName = activeSheet.name;
-          rangeAddress = targetRange;
-          dataSnapshot = `data:image/png;base64,${chartImage.value}`;
-          return { isChart, sheetName, rangeAddress, dataSnapshot };
-        }
+        isChart = true;
+        sheetName = activeSheet.name;
+        rangeAddress = chart.name;
+        dataSnapshot = `data:image/png;base64,${chartImage.value}`;
+        return { isChart, sheetName, rangeAddress, dataSnapshot, chartSourceRange };
+      } catch (e) {
+        // Not a chart name, fallback to treating as range coordinates
       }
 
       const range = activeSheet.getRange(targetRange);
@@ -468,13 +559,14 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
       await context.sync();
 
       const chartImage = activeChart.getImage();
+      chartSourceRange = await getChartSourceRange(activeChart, context);
       await context.sync();
 
       isChart = true;
       sheetName = activeChart.worksheet.name;
       rangeAddress = activeChart.name;
       dataSnapshot = `data:image/png;base64,${chartImage.value}`;
-      return { isChart, sheetName, rangeAddress, dataSnapshot };
+      return { isChart, sheetName, rangeAddress, dataSnapshot, chartSourceRange };
     } catch (chartErr) {
       console.log("[DEBUG] Active chart selection failed, falling back to Range check.");
     }
@@ -505,13 +597,14 @@ export const getActiveSelection = async (targetRange?: string): Promise<{
         if (charts.items.length > 0) {
           const firstChart = charts.items[0];
           const chartImage = firstChart.getImage();
+          chartSourceRange = await getChartSourceRange(firstChart, context);
           await context.sync();
 
           isChart = true;
           sheetName = activeSheet.name;
           rangeAddress = firstChart.name;
           dataSnapshot = `data:image/png;base64,${chartImage.value}`;
-          return { isChart, sheetName, rangeAddress, dataSnapshot };
+          return { isChart, sheetName, rangeAddress, dataSnapshot, chartSourceRange };
         }
       } catch (innerErr) {}
       
@@ -556,9 +649,11 @@ export const saveMetadataToCustomXml = async (
   linkId: string,
   sheetName: string,
   rangeAddress: string,
-  type: "Table" | "Chart"
+  type: "Table" | "Chart",
+  chartSourceRange?: string
 ) => {
-  const xmlString = `<LiveLink><LinkId>${linkId}</LinkId><FileId>${fileId}</FileId><SheetName>${sheetName}</SheetName><RangeAddress>${rangeAddress}</RangeAddress><Type>${type}</Type></LiveLink>`;
+  const sourceRangeTag = chartSourceRange ? `<ChartSourceRange>${chartSourceRange}</ChartSourceRange>` : "";
+  const xmlString = `<LiveLink><LinkId>${linkId}</LinkId><FileId>${fileId}</FileId><SheetName>${sheetName}</SheetName><RangeAddress>${rangeAddress}</RangeAddress><Type>${type}</Type>${sourceRangeTag}</LiveLink>`;
 
   await Excel.run(async (context: any) => {
     context.workbook.customXmlParts.add(xmlString);
