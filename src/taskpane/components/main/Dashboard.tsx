@@ -993,7 +993,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         </Typography>
 
         {/* Dynamic Naming Input Field [1] */}
-        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 1.5 }}>
           <TextField
             size="small"
             label="Custom Name"
