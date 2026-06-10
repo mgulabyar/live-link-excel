@@ -1,21 +1,26 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" 
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" 
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" 
+           xsi:type="TaskPaneApp">
   <Id>6c9ec0ef-5bdf-4707-a38a-f7a5ad1b3bd3</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>Contoso</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Live Link"/>
-  <Description DefaultValue="A template to get started."/>
+  <Description DefaultValue="Live Link Excel and PowerPoint Connector"/>
   <IconUrl DefaultValue="https://live-link-excel.vercel.app/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://live-link-excel.vercel.app/assets/icon-64.png"/>
-  <SupportUrl DefaultValue="https://www.contoso.com/help"/>
+  <SupportUrl DefaultValue="https://live-link-excel.vercel.app/help"/>
   
   <AppDomains>
     <AppDomain>https://www.contoso.com</AppDomain>
     <AppDomain>https://login.microsoftonline.com</AppDomain>
     <AppDomain>https://graph.microsoft.com</AppDomain>
-  <AppDomain>https://live-link-backend.vercel.app</AppDomain>
-
+    <AppDomain>https://live-link-backend.vercel.app</AppDomain>
+    <AppDomain>https://live-link-excel.vercel.app</AppDomain>
+  </AppDomains>
   
   <Hosts>
     <Host Name="Workbook"/>
@@ -30,8 +35,7 @@
   
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Hosts>
-      
-      <!-- Excel Host Configuration -->
+      <!-- Excel Host -->
       <Host xsi:type="Workbook">
         <DesktopFormFactor>
           <GetStarted>
@@ -71,7 +75,7 @@
         </DesktopFormFactor>
       </Host>
 
-      <!-- PowerPoint Host Configuration -->
+      <!-- PowerPoint Host -->
       <Host xsi:type="Presentation">
         <DesktopFormFactor>
           <GetStarted>
@@ -110,7 +114,6 @@
           </ExtensionPoint>
         </DesktopFormFactor>
       </Host>
-      
     </Hosts>
     <Resources>
       <bt:Images>
@@ -124,13 +127,13 @@
         <bt:Url id="Taskpane.Url" DefaultValue="https://live-link-excel.vercel.app/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="Get started with your sample add-in!"/>
+        <bt:String id="GetStarted.Title" DefaultValue="Get started with Live Link!"/>
         <bt:String id="CommandsGroup.Label" DefaultValue="Live Link"/>
         <bt:String id="TaskpaneButton.Label" DefaultValue="Start"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Your sample add-in loaded successfully. Go to the HOME tab and click the 'Show Task Pane' button to get started."/>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Click to Show a Taskpane"/>
+        <bt:String id="GetStarted.Description" DefaultValue="Live Link loaded successfully. Click 'Start' to begin."/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Click to open Live Link Taskpane"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
