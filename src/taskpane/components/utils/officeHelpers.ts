@@ -361,6 +361,17 @@ interface ExcelRect {
   endCol: number;
 }
 
+// Helper: Excel Online ke dynamic URL query parameters (?web=1, ?d=w... etc) ko clean karne ke liye
+const normalizeUrl = (url: string | undefined): string => {
+  if (!url) return "";
+  try {
+    // Split by "?" and "#" to extract only the pure base file path
+    return url.split("?")[0].split("#")[0].trim().toLowerCase();
+  } catch (e) {
+    return url.trim().toLowerCase();
+  }
+};
+
 export const generateUUID = (): string => {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -425,7 +436,7 @@ const isCoordinates = (str: string): boolean => {
   return /^[A-Z]+[0-9]+(:[A-Z]+[0-9]+)?$/i.test(str.replace(/[$]/g, ""));
 };
 
-// UPDATED: Standard templates copying ko support karne ke liye currentFileId check lagaya hai
+// UPDATED: Query parameter sanitization ke sath template match check
 export const getExistingLinkId = async (
   sheetName: string,
   rangeAddress: string,
@@ -462,9 +473,11 @@ export const getExistingLinkId = async (
           const savedLinkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
           const savedFileId = (xmlDoc.getElementsByTagName("FileId")[0]?.textContent || "").trim();
 
-          // Agar current file URL store shuda FileId se match na kare, to iska matlab hai ke 
-          // template copy ki gayi hai. Hum purani ID skip karke naya link banne denge.
-          if (currentFileId && savedFileId && currentFileId.trim() !== savedFileId) {
+          // Normalization logic: Dono URLs ko clean karke base file path match karte hain
+          const normalizedCurrent = normalizeUrl(currentFileId);
+          const normalizedSaved = normalizeUrl(savedFileId);
+
+          if (normalizedCurrent && normalizedSaved && normalizedCurrent !== normalizedSaved) {
             continue;
           }
 
@@ -494,6 +507,7 @@ export const getExistingLinkId = async (
       }
     }
 
+    // Fallback block for Charts with query normalization
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value;
@@ -509,7 +523,10 @@ export const getExistingLinkId = async (
           const savedType = (xmlDoc.getElementsByTagName("Type")[0]?.textContent || "").trim();
           const savedFileId = (xmlDoc.getElementsByTagName("FileId")[0]?.textContent || "").trim();
 
-          if (currentFileId && savedFileId && currentFileId.trim() !== savedFileId) {
+          const normalizedCurrent = normalizeUrl(currentFileId);
+          const normalizedSaved = normalizeUrl(savedFileId);
+
+          if (normalizedCurrent && normalizedSaved && normalizedCurrent !== normalizedSaved) {
             continue;
           }
 
@@ -663,10 +680,8 @@ export const getActiveSelection = async (
   });
 };
 
-// UPDATED: formatExcelRange ko clean blank sync kar diya hai taake Excel cell highlight lock na hon
 export const formatExcelRange = async (_sheetName: string, _rangeAddress: string) => {
   await Excel.run(async (context: any) => {
-    // Client ke template ki original format ko barkarar rakhne ke liye yahan koi background aur border change nahi hoga
     await context.sync();
   });
 };
