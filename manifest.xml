@@ -16,7 +16,6 @@
     <AppDomain>https://graph.microsoft.com</AppDomain>
   <AppDomain>https://live-link-backend.vercel.app</AppDomain>
 
-  </>
   
   <Hosts>
     <Host Name="Workbook"/>
