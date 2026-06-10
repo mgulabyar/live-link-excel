@@ -534,12 +534,13 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
-import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
+import { Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
 import { registerLinkData, deleteLinkData, getLinkDetails } from "../services/api";
 import {
   generateUUID,
   getActiveSelection,
+  formatExcelRange,
   clearExcelRangeFormat,
   saveMetadataToCustomXml,
   getExistingLinkId,
@@ -549,22 +550,6 @@ import {
 interface DashboardProps {
   onLogout: () => void;
 }
-
-const normalizeUrl = (url: string): string => {
-  if (!url) return "";
-  try {
-    const decodedUrl = decodeURIComponent(url);
-    return decodedUrl
-      .replace(/[\\/]+/g, "/")
-      .trim()
-      .toLowerCase();
-  } catch (e) {
-    return url
-      .replace(/[\\/]+/g, "/")
-      .trim()
-      .toLowerCase();
-  }
-};
 
 const Dashboard: React.FC<DashboardProps> = () => {
   const [statusMessage, setStatusMessage] = useState<{
@@ -579,24 +564,16 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [isRangeLinked, setIsRangeLinked] = useState<string | null>(null);
   const [matchedRangeAddress, setMatchedRangeAddress] = useState<string | null>(null);
 
-  const [customName, setCustomName] = useState<string>("a");
+  const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
+  
   const [isChartSelected, setIsChartSelected] = useState<boolean>(false);
 
   const [lastSelection, setLastSelection] = useState<any>(null);
-  
-  // React Refs used as absolute failsafe states
   const isMouseInPaneRef = useRef<boolean>(false);
-  const currentUrlRef = useRef<string>("excel-local-livelink");
 
   useEffect(() => {
     let eventResult: any;
-    
-    // Fetch file properties once on load to get the current URL
-    Office.context.document.getFilePropertiesAsync((fileResult: any) => {
-      currentUrlRef.current = fileResult?.value?.url || "excel-local-livelink";
-    });
-
     Excel.run(async (context: any) => {
       eventResult = context.workbook.onSelectionChanged.add(handleSelectionChanged);
       await context.sync();
@@ -613,6 +590,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
   }, []);
 
+  // UPDATED: Dynamic active URL detect karne ke liye checks implement kiye hain
   const handleSelectionChanged = async () => {
     if (isMouseInPaneRef.current) {
       console.log("[DEBUG] Selection change ignored because mouse is active inside the taskpane.");
@@ -622,34 +600,30 @@ const Dashboard: React.FC<DashboardProps> = () => {
     try {
       const selection = await getActiveSelection();
       setLastSelection(selection); 
-      setIsChartSelected(selection.isChart); 
+      setIsChartSelected(selection.isChart);
 
-      const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
+      // Active dynamic path check taake rename/copy dynamic state check ho sake
+      let currentFileId = "excel-local-livelink";
+      await new Promise<void>((resolve) => {
+        Office.context.document.getFilePropertiesAsync((fileResult: any) => {
+          if (fileResult && fileResult.value && fileResult.value.url) {
+            currentFileId = fileResult.value.url;
+          }
+          resolve();
+        });
+      });
+
+      // Updated helper function ko path check pass kiya ja raha hai
+      const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress, currentFileId);
 
       if (match) {
         setFetchingName(true);
         try {
           const res = await getLinkDetails(match.linkId);
           if (res.success && res.data) {
-            const currentFileName = getFileNameFromUrl(currentUrlRef.current);
-
-            // Automatically syncs new renamed filename on MongoDB when Excel copy is opened [1]
-            if (res.data.excelFileName !== currentFileName) {
-              console.log(`[DEBUG] Filename mismatch detected. Syncing renamed workbook to: ${currentFileName}`);
-              await registerLinkData({
-                linkId: match.linkId,
-                componentName: res.data.componentName || "",
-                excelFileId: currentUrlRef.current,
-                excelFileName: currentFileName, // Updates to the new renamed file name in MongoDB [1]
-                sheetName: selection.sheetName,
-                rangeAddress: selection.rangeAddress,
-                type: selection.isChart ? "Chart" : "Table",
-                dataSnapshot: res.data.dataSnapshot
-              });
-            }
-
             setIsRangeLinked(match.linkId);
             setMatchedRangeAddress(match.matchedRange);
+            // Auto-load custom name or chart title
             setCustomName(res.data.componentName || selection.chartTitle || "");
           } else {
             setIsRangeLinked(null);
@@ -657,9 +631,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
             setCustomName(selection.chartTitle || "");
           }
         } catch (dbErr) {
-          console.warn("MongoDB verification failed, fallback to local XML match:", dbErr);
-          setIsRangeLinked(match.linkId);
-          setMatchedRangeAddress(match.matchedRange);
+          console.warn("MongoDB verification failed:", dbErr);
+          setIsRangeLinked(null);
+          setMatchedRangeAddress(null);
           setCustomName(selection.chartTitle || "");
         } finally {
           setFetchingName(false);
@@ -670,7 +644,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setCustomName(selection.chartTitle || ""); 
       }
     } catch (e) {
-      console.log("[DEBUG] Selection lost, retaining previous active selection.");
+      console.log("[DEBUG] Selection temporarily lost, retaining previous active selection.");
     }
   };
 
@@ -708,12 +682,15 @@ const Dashboard: React.FC<DashboardProps> = () => {
             selection.rangeAddress,
             type
           );
-          
-          // REMOVED: formatExcelRange call completely removed to keep native Excel cell styling untouched [1]
+
+          if (!selection.isChart) {
+            await formatExcelRange(selection.sheetName, selection.rangeAddress);
+          }
         }
 
         setTimeout(async () => {
           try {
+            // Agar chart hai to uske custom Excel Title ko prioritze kiya jayega
             const finalComponentName = selection.isChart ? (selection.chartTitle || customName) : customName;
 
             await registerLinkData({
@@ -826,8 +803,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   return (
     <Box
-      onMouseEnter={() => { isMouseInPaneRef.current = true; }} // Active Lock [1]
-      onMouseLeave={() => { isMouseInPaneRef.current = false; }} // Active Unlock [1]
+      onMouseEnter={() => { isMouseInPaneRef.current = true; }} 
+      onMouseLeave={() => { isMouseInPaneRef.current = false; }} 
       sx={{
         height: "100vh",
         display: "flex",
@@ -887,7 +864,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               fontSize: "17px",
               color: "#323130",
               fontFamily: "Segoe UI, Arial",
-              letterSpacing: "0.3px",
+              letterSpacing: "0.3px"
             }}
           >
             Live Link
@@ -985,7 +962,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               color="error"
               disabled={isUpdating || isUnlinking}
               onClick={handleUnlinkRange}
-              endIcon={isUnlinking ? <CircularProgress size={18} color="inherit" /> : <LinkOff sx={{ fontSize: 18 }} />}
+              endIcon={<LinkOff sx={{ fontSize: 18 }} />}
               sx={{
                 width: "70%", 
                 height: "44px",
