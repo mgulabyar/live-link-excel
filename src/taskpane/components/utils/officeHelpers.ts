@@ -649,14 +649,10 @@ export const getActiveSelection = async (
   });
 };
 
-// EMPTY: Keeps native Excel formatting completely untouched during links [1]
 export const formatExcelRange = async (_sheetName: string, _rangeAddress: string) => {
-  // Purposely empty to prevent gray background and blue borders [1]
 };
 
-// EMPTY: Safeguards original cell borders and styles during unlinks [1]
 export const clearExcelRangeFormat = async (_sheetName: string, _rangeAddress: string) => {
-  // Purposely empty to protect user formatting [1]
 };
 
 export const saveMetadataToCustomXml = async (

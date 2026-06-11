@@ -67,11 +67,11 @@ module.exports = async (env, options) => {
         chunks: ["polyfill", "taskpane", "react"],
       }),
       // Compiles and exposes the popup authentication dialog smoothly
-      new HtmlWebpackPlugin({
-        filename: "login.html",
-        template: "./src/taskpane/login.html",
-        chunks: ["polyfill"],
-      }),
+      // new HtmlWebpackPlugin({
+      //   filename: "login.html",
+      //   template: "./src/taskpane/login.html",
+      //   chunks: ["polyfill"],
+      // }),
       new CopyWebpackPlugin({
         patterns: [
           {
