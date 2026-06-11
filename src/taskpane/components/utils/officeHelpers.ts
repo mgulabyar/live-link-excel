@@ -979,12 +979,12 @@ export const formatExcelRange = async (sheetName: string, rangeAddress: string) 
     const sheet = context.workbook.worksheets.getItem(sheetName);
     const range = sheet.getRange(rangeAddress);
 
-    range.format.fill.color = "#F3F2F1";
+    // range.format.fill.color = "#F3F2F1";
 
-    const bottomBorder = range.format.borders.getItem("EdgeBottom");
-    bottomBorder.color = "#0078d4";
-    bottomBorder.style = "Continuous";
-    bottomBorder.weight = "Medium";
+    // const bottomBorder = range.format.borders.getItem("EdgeBottom");
+    // bottomBorder.color = "#0078d4";
+    // bottomBorder.style = "Continuous";
+    // bottomBorder.weight = "Medium";
 
     await context.sync();
   });
