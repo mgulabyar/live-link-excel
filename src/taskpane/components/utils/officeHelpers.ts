@@ -346,6 +346,8 @@
 //   });
 // };
 
+////////////////////////////////////
+
 
 // declare const Excel: any;
 
@@ -672,6 +674,7 @@
 // };
 
 declare const Excel: any;
+
 export interface LinkMatch {
   linkId: string;
   matchedRange: string;
@@ -757,9 +760,9 @@ export const getExistingLinkId = async (
     parts.load("items");
     await context.sync();
 
+    // PropertyNotLoaded se bachne ke liye baghair zaroorat 'id' ko map nahi kiya gaya
     const xmlBlobs = parts.items.map((part: any) => {
       return {
-        id: part.id,
         xmlBlob: part.getXml(),
       };
     });
@@ -898,39 +901,61 @@ export const getActiveSelection = async (
       return { isChart, sheetName, rangeAddress, dataSnapshot };
     }
 
+    // --- CHART SELECTION ---
     try {
       const activeChart = context.workbook.getSelectedChart();
-      activeChart.load(["name", "worksheet", "title"]);
-      activeChart.title.load("text");
+      activeChart.load("name");
+      
+      const activeWorksheet = activeChart.worksheet;
+      activeWorksheet.load("name"); // Worksheet ka naam explicitly load kiya gaya hai
+
+      const chartTitleObj = activeChart.title;
+      chartTitleObj.load("text");
+      
       await context.sync();
 
       const chartImage = activeChart.getImage();
       await context.sync();
 
       isChart = true;
-      sheetName = activeChart.worksheet.name;
+      sheetName = activeWorksheet.name;
       rangeAddress = activeChart.name;
       dataSnapshot = `data:image/png;base64,${chartImage.value}`;
+      
+      let chartTitle = activeChart.name;
+      try {
+        if (chartTitleObj && chartTitleObj.text) {
+          chartTitle = chartTitleObj.text;
+        }
+      } catch (titleErr) {
+        // Safe fallback agar title set na ho
+      }
+
       return {
         isChart,
         sheetName,
         rangeAddress,
         dataSnapshot,
-        chartTitle: activeChart.title.text || activeChart.name,
+        chartTitle,
       };
     } catch (chartErr) {
       console.log("[DEBUG] Active chart selection failed, falling back to Range check.");
     }
 
+    // --- RANGE SELECTION ---
     try {
       const activeRange = context.workbook.getSelectedRange();
-      activeRange.load(["address", "worksheet"]);
+      activeRange.load("address");
+      
+      const activeWorksheet = activeRange.worksheet;
+      activeWorksheet.load("name"); // Worksheet ka naam explicitly load kiya gaya hai
+      
       await context.sync();
 
       const rangeImage = activeRange.getImage();
       await context.sync();
 
-      sheetName = activeRange.worksheet.name;
+      sheetName = activeWorksheet.name;
       const fullAddress = activeRange.address;
       rangeAddress = fullAddress.includes("!") ? fullAddress.split("!")[1] : fullAddress;
       rangeAddress = rangeAddress.replace(/['"]/g, "");
@@ -972,35 +997,10 @@ export const getActiveSelection = async (
   });
 };
 
-export const formatExcelRange = async (sheetName: string, rangeAddress: string) => {
-  await Excel.run(async (context: any) => {
-    const sheet = context.workbook.worksheets.getItem(sheetName);
-    const range = sheet.getRange(rangeAddress);
-
-    range.format.fill.color = "#F3F2F1";
-
-    const bottomBorder = range.format.borders.getItem("EdgeBottom");
-    bottomBorder.color = "#0078d4";
-    bottomBorder.style = "Continuous";
-    bottomBorder.weight = "Medium";
-
-    await context.sync();
-  });
+export const formatExcelRange = async (_sheetName: string, _rangeAddress: string) => {
 };
 
-export const clearExcelRangeFormat = async (sheetName: string, rangeAddress: string) => {
-  await Excel.run(async (context: any) => {
-    try {
-      const sheet = context.workbook.worksheets.getItem(sheetName);
-      const range = sheet.getRange(rangeAddress);
-      range.format.fill.clear();
-
-      const bottomBorder = range.format.borders.getItem("EdgeBottom");
-      bottomBorder.style = "None";
-
-      await context.sync();
-    } catch (e) {}
-  });
+export const clearExcelRangeFormat = async (_sheetName: string, _rangeAddress: string) => {
 };
 
 export const saveMetadataToCustomXml = async (
