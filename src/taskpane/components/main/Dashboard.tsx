@@ -538,7 +538,7 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
-import { Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
+import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
 import { registerLinkData, deleteLinkData, getLinkDetails } from "../services/api";
 import {
@@ -576,7 +576,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
     severity: "success" | "error" | "info";
   } | null>(null);
 
-  // Independent loading states
   const [isLinking, setIsLinking] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isUnlinking, setIsUnlinking] = useState<boolean>(false);
@@ -589,15 +588,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [isChartSelected, setIsChartSelected] = useState<boolean>(false);
 
   const [lastSelection, setLastSelection] = useState<any>(null);
-  
-  // Safe React Refs to prevent focus deselect async race conditions
   const isMouseInPaneRef = useRef<boolean>(false);
   const currentUrlRef = useRef<string>("excel-local-livelink");
 
   useEffect(() => {
     let eventResult: any;
     
-    // Fetch file properties once on load to get the current URL
     Office.context.document.getFilePropertiesAsync((fileResult: any) => {
       currentUrlRef.current = fileResult?.value?.url || "excel-local-livelink";
     });
@@ -619,7 +615,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
   }, []);
 
   const handleSelectionChanged = async () => {
-    // Zero-latency check: Ignore Excel selection change if mouse is in pane [1]
     if (isMouseInPaneRef.current || document.hasFocus()) {
       console.log("[DEBUG] Selection change ignored because taskpane has focus.");
       return;
@@ -633,25 +628,19 @@ const Dashboard: React.FC<DashboardProps> = () => {
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
       if (match) {
-        // INSTANT LOCAL MATCH: Immediately show Update/Unlink buttons based on local Custom XML! [1]
-        setIsRangeLinked(match.linkId);
-        setMatchedRangeAddress(match.matchedRange);
-        
-        // Background DB call to fetch custom name dynamically [1]
         setFetchingName(true);
         try {
           const res = await getLinkDetails(match.linkId);
           if (res.success && res.data) {
             const currentFileName = getFileNameFromUrl(currentUrlRef.current);
 
-            // Automatically syncs new renamed filename on MongoDB when Excel copy is opened [1]
             if (res.data.excelFileName !== currentFileName) {
               console.log(`[DEBUG] Filename mismatch detected. Syncing renamed workbook to: ${currentFileName}`);
               await registerLinkData({
                 linkId: match.linkId,
                 componentName: res.data.componentName || "",
                 excelFileId: currentUrlRef.current,
-                excelFileName: currentFileName, // Updates to the new renamed file name in MongoDB [1]
+                excelFileName: currentFileName,
                 sheetName: selection.sheetName,
                 rangeAddress: selection.rangeAddress,
                 type: selection.isChart ? "Chart" : "Table",
@@ -659,12 +648,28 @@ const Dashboard: React.FC<DashboardProps> = () => {
               });
             }
 
+            setIsRangeLinked(match.linkId);
+            setMatchedRangeAddress(match.matchedRange);
             setCustomName(res.data.componentName || selection.chartTitle || "");
+          } else {
+            setIsRangeLinked(null);
+            setMatchedRangeAddress(null);
+            setCustomName(selection.chartTitle || "");
           }
-        } catch (dbErr) {
-          console.warn("MongoDB verification failed, fallback to local XML match:", dbErr);
-          // RESILIENT FALLBACK: Do not clear isRangeLinked if API fails due to CORS or network offline! [1]
-          setCustomName(selection.chartTitle || "");
+        } catch (dbErr: any) {
+          console.warn("MongoDB verification failed:", dbErr);
+          
+          // FIXED: If database explicitly returns 404 (Not Found), it means record was deleted. Revert to fresh link mode [1]
+          if (dbErr.response && dbErr.response.status === 404) {
+            setIsRangeLinked(null);
+            setMatchedRangeAddress(null);
+            setCustomName("");
+          } else {
+            // Keep buttons visible only if it is a CORS or network connectivity error [1]
+            setIsRangeLinked(match.linkId);
+            setMatchedRangeAddress(match.matchedRange);
+            setCustomName(selection.chartTitle || "");
+          }
         } finally {
           setFetchingName(false);
         }
@@ -680,7 +685,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const handleCreateLiveLink = async () => {
     try {
-      // Use cached selection to bypass deselect focus-loss [1]
       const selection = matchedRangeAddress 
         ? await getActiveSelection(matchedRangeAddress) 
         : (lastSelection && lastSelection.isChart) ? lastSelection : await getActiveSelection();
@@ -717,7 +721,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
         setTimeout(async () => {
           try {
-            // If it is a chart, prioritize its own Excel Chart Title over the manual customName! [1]
             const finalComponentName = selection.isChart ? (selection.chartTitle || customName) : customName;
 
             await registerLinkData({
@@ -800,7 +803,16 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 await clearExcelRangeFormat(selection.sheetName, selection.rangeAddress);
               }
 
-              await deleteLinkData(isRangeLinked!);
+              // FIXED: If record is already deleted from MongoDB Atlas, safely ignore the 404 error and proceed to unlink locally [1]
+              try {
+                await deleteLinkData(isRangeLinked!);
+              } catch (apiErr: any) {
+                if (apiErr.response && apiErr.response.status === 404) {
+                  console.log("[DEBUG] Record already deleted from database. Proceeding locally.");
+                } else {
+                  throw apiErr;
+                }
+              }
 
               item.part.delete();
               await context.sync();
