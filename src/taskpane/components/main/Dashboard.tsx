@@ -523,6 +523,8 @@
 // };
 
 // export default Dashboard;
+
+
 declare const Office: any;
 declare const Excel: any;
 import React, { useEffect, useState, useRef } from "react";
@@ -595,7 +597,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
   }, []);
 
-  // UPDATED: active file properties URL get kar ke selection checking logic dynamic ki gayi hai
   const handleSelectionChanged = async () => {
     // Zero-latency check: Ignore Excel selection change if mouse is in pane [1]
     if (isMouseInPaneRef.current) {
@@ -608,19 +609,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       setLastSelection(selection); // Cache the selection state [1]
       setIsChartSelected(selection.isChart); // Check if chart [1]
 
-      // Active workbook properties URL fetch karna taake renamed file track ho sake
-      let currentFileId = "excel-local-livelink";
-      await new Promise<void>((resolve) => {
-        Office.context.document.getFilePropertiesAsync((fileResult: any) => {
-          if (fileResult && fileResult.value && fileResult.value.url) {
-            currentFileId = fileResult.value.url;
-          }
-          resolve();
-        });
-      });
-
-      // Signature pass match parameters (sheetName, rangeAddress, currentFileId)
-      const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress, currentFileId);
+      const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
       if (match) {
         setFetchingName(true);

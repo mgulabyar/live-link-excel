@@ -671,7 +671,6 @@
 //   });
 // };
 
-
 declare const Excel: any;
 export interface LinkMatch {
   linkId: string;
@@ -684,27 +683,6 @@ interface ExcelRect {
   startCol: number;
   endCol: number;
 }
-
-// Helper: Excel Online ke dynamic URL query parameters (?web=1, ?d=w... etc) ko clean karne ke liye
-const normalizeUrl = (url: string | undefined): string => {
-  if (!url) return "";
-  try {
-    return url.split("?")[0].split("#")[0].trim().toLowerCase();
-  } catch (e) {
-    return url.trim().toLowerCase();
-  }
-};
-
-// Helper: File path/URL se uski parent folder directory nikalne ke liye (Rename detection)
-const getParentFolder = (url: string | undefined): string => {
-  if (!url) return "";
-  const cleaned = normalizeUrl(url);
-  const parts = cleaned.split("/");
-  if (parts.length > 1) {
-    parts.pop(); // Filename ko remove kar denge taake sirf parent folder path bach jaye
-  }
-  return parts.join("/");
-};
 
 export const generateUUID = (): string => {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -770,11 +748,9 @@ const isCoordinates = (str: string): boolean => {
   return /^[A-Z]+[0-9]+(:[A-Z]+[0-9]+)?$/i.test(str.replace(/[$]/g, ""));
 };
 
-// UPDATED: Added currentFileId check for template and rename robustness
 export const getExistingLinkId = async (
   sheetName: string,
-  rangeAddress: string,
-  currentFileId?: string
+  rangeAddress: string
 ): Promise<LinkMatch | null> => {
   return await Excel.run(async (context: any) => {
     const parts = context.workbook.customXmlParts;
@@ -805,22 +781,6 @@ export const getExistingLinkId = async (
             .trim()
             .toLowerCase();
           const savedLinkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
-          const savedFileId = (xmlDoc.getElementsByTagName("FileId")[0]?.textContent || "").trim();
-
-          const normalizedCurrent = normalizeUrl(currentFileId);
-          const normalizedSaved = normalizeUrl(savedFileId);
-
-          const parentCurrent = getParentFolder(currentFileId);
-          const parentSaved = getParentFolder(savedFileId);
-
-          // RENAME VS COPY RULE:
-          // File rename ho kar active rahegi agar folder same hai. Alag directory hone par copy check trigger hoga.
-          const isSameFileOrRenamed = (normalizedCurrent === normalizedSaved) || 
-                                      (parentCurrent && parentSaved && parentCurrent === parentSaved);
-
-          if (!isSameFileOrRenamed) {
-            continue; 
-          }
 
           if (savedSheet === cleanSheet) {
             if (savedRange === cleanRange) {
@@ -848,7 +808,6 @@ export const getExistingLinkId = async (
       }
     }
 
-    // Fallback block for Charts with rename normalization
     for (let item of xmlBlobs) {
       try {
         const xmlText = item.xmlBlob.value;
@@ -862,20 +821,6 @@ export const getExistingLinkId = async (
             .toLowerCase();
           const savedLinkId = xmlDoc.getElementsByTagName("LinkId")[0]?.textContent || "";
           const savedType = (xmlDoc.getElementsByTagName("Type")[0]?.textContent || "").trim();
-          const savedFileId = (xmlDoc.getElementsByTagName("FileId")[0]?.textContent || "").trim();
-
-          const normalizedCurrent = normalizeUrl(currentFileId);
-          const normalizedSaved = normalizeUrl(savedFileId);
-
-          const parentCurrent = getParentFolder(currentFileId);
-          const parentSaved = getParentFolder(savedFileId);
-
-          const isSameFileOrRenamed = (normalizedCurrent === normalizedSaved) || 
-                                      (parentCurrent && parentSaved && parentCurrent === parentSaved);
-
-          if (!isSameFileOrRenamed) {
-            continue;
-          }
 
           if (savedSheet === cleanSheet && savedType === "Chart") {
             return {
@@ -1027,13 +972,35 @@ export const getActiveSelection = async (
   });
 };
 
-// UPDATED & CLEANED: formatting codes completely deleted to protect original Excel formatting
-export const formatExcelRange = async (_sheetName: string, _rangeAddress: string) => {
-  return;
+export const formatExcelRange = async (sheetName: string, rangeAddress: string) => {
+  await Excel.run(async (context: any) => {
+    const sheet = context.workbook.worksheets.getItem(sheetName);
+    const range = sheet.getRange(rangeAddress);
+
+    range.format.fill.color = "#F3F2F1";
+
+    const bottomBorder = range.format.borders.getItem("EdgeBottom");
+    bottomBorder.color = "#0078d4";
+    bottomBorder.style = "Continuous";
+    bottomBorder.weight = "Medium";
+
+    await context.sync();
+  });
 };
 
-export const clearExcelRangeFormat = async (_sheetName: string, _rangeAddress: string) => {
-  return;
+export const clearExcelRangeFormat = async (sheetName: string, rangeAddress: string) => {
+  await Excel.run(async (context: any) => {
+    try {
+      const sheet = context.workbook.worksheets.getItem(sheetName);
+      const range = sheet.getRange(rangeAddress);
+      range.format.fill.clear();
+
+      const bottomBorder = range.format.borders.getItem("EdgeBottom");
+      bottomBorder.style = "None";
+
+      await context.sync();
+    } catch (e) {}
+  });
 };
 
 export const saveMetadataToCustomXml = async (
