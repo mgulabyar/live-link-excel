@@ -527,7 +527,7 @@
 
 declare const Office: any;
 declare const Excel: any;
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -538,7 +538,7 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
-import { WarningAmber, Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
+import { Link as LinkIcon, Send, Sync, LinkOff } from "@mui/icons-material";
 
 import { registerLinkData, deleteLinkData, getLinkDetails } from "../services/api";
 import {
@@ -588,7 +588,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [isChartSelected, setIsChartSelected] = useState<boolean>(false);
 
   const [lastSelection, setLastSelection] = useState<any>(null);
-  const isMouseInPaneRef = useRef<boolean>(false);
   const currentUrlRef = useRef<string>("excel-local-livelink");
 
   useEffect(() => {
@@ -615,11 +614,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
   }, []);
 
   const handleSelectionChanged = async () => {
-    if (isMouseInPaneRef.current || document.hasFocus()) {
-      console.log("[DEBUG] Selection change ignored because taskpane has focus.");
-      return;
-    }
-
     try {
       const selection = await getActiveSelection();
       setLastSelection(selection); 
@@ -628,6 +622,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
       if (match) {
+        setIsRangeLinked(match.linkId);
+        setMatchedRangeAddress(match.matchedRange);
+
         setFetchingName(true);
         try {
           const res = await getLinkDetails(match.linkId);
@@ -635,7 +632,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
             const currentFileName = getFileNameFromUrl(currentUrlRef.current);
 
             if (res.data.excelFileName !== currentFileName) {
-              console.log(`[DEBUG] Filename mismatch detected. Syncing renamed workbook to: ${currentFileName}`);
               await registerLinkData({
                 linkId: match.linkId,
                 componentName: res.data.componentName || "",
@@ -648,28 +644,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
               });
             }
 
-            setIsRangeLinked(match.linkId);
-            setMatchedRangeAddress(match.matchedRange);
             setCustomName(res.data.componentName || selection.chartTitle || "");
-          } else {
-            setIsRangeLinked(null);
-            setMatchedRangeAddress(null);
-            setCustomName(selection.chartTitle || "");
           }
-        } catch (dbErr: any) {
-          console.warn("MongoDB verification failed:", dbErr);
-          
-          // FIXED: If database explicitly returns 404 (Not Found), it means record was deleted. Revert to fresh link mode [1]
-          if (dbErr.response && dbErr.response.status === 404) {
-            setIsRangeLinked(null);
-            setMatchedRangeAddress(null);
-            setCustomName("");
-          } else {
-            // Keep buttons visible only if it is a CORS or network connectivity error [1]
-            setIsRangeLinked(match.linkId);
-            setMatchedRangeAddress(match.matchedRange);
-            setCustomName(selection.chartTitle || "");
-          }
+        } catch (dbErr) {
+          console.warn("MongoDB verification failed, fallback to local XML match:", dbErr);
+          setCustomName(selection.chartTitle || "");
         } finally {
           setFetchingName(false);
         }
@@ -679,7 +658,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setCustomName("");
       }
     } catch (e) {
-      console.log("[DEBUG] Selection temporarily lost, retaining previous active selection.");
+      console.log("[DEBUG] Selection lost, retaining previous active selection.");
     }
   };
 
@@ -803,16 +782,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 await clearExcelRangeFormat(selection.sheetName, selection.rangeAddress);
               }
 
-              // FIXED: If record is already deleted from MongoDB Atlas, safely ignore the 404 error and proceed to unlink locally [1]
-              try {
-                await deleteLinkData(isRangeLinked!);
-              } catch (apiErr: any) {
-                if (apiErr.response && apiErr.response.status === 404) {
-                  console.log("[DEBUG] Record already deleted from database. Proceeding locally.");
-                } else {
-                  throw apiErr;
-                }
-              }
+              await deleteLinkData(isRangeLinked!);
 
               item.part.delete();
               await context.sync();
@@ -842,8 +812,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   return (
     <Box
-      onMouseEnter={() => { isMouseInPaneRef.current = true; }} // Active Lock [1]
-      onMouseLeave={() => { isMouseInPaneRef.current = false; }} // Active Unlock [1]
       sx={{
         height: "100vh",
         display: "flex",
@@ -925,14 +893,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
           be refreshed directly in PowerPoint.
         </Typography>
 
-        {/* Input box margin tightened by 1px (mb: 1) for professional compact visual alignment */}
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 1 }}>
           <TextField
             size="small"
-            label={isChartSelected ? "Chart Title (From Excel)" : "Custom Name"} // Dynamically changes labels
+            label={isChartSelected ? "Chart Title (From Excel)" : "Custom Name"} 
             placeholder={isChartSelected ? "Define title on Excel Chart" : "e.g. Monthly Revenue Table"}
             value={customName}
-            // Disabled if it is a Chart (Forces user to set name in Excel title, preventing deselect) [1]
             disabled={isChartSelected || isLinking || isUpdating || isUnlinking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
@@ -990,7 +956,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     fontSize: "14px",
                     boxShadow: "none",
                     fontFamily: "Segoe UI, Arial",
-                    "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+                    "&:hover": { bgcolor: "#005a9e", boxShadow: "none" }
                   }}
                 >
                   {isUpdating ? "Updating..." : "Update Data"}
@@ -1003,7 +969,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               color="error"
               disabled={isUpdating || isUnlinking}
               onClick={handleUnlinkRange}
-              endIcon={isUnlinking ? <CircularProgress size={18} color="inherit" /> : <LinkOff sx={{ fontSize: 18 }} />}
+              endIcon={<LinkOff sx={{ fontSize: 18 }} />}
               sx={{
                 width: "70%", 
                 height: "44px",
@@ -1048,7 +1014,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     fontSize: "14px",
                     boxShadow: "none",
                     fontFamily: "Segoe UI, Arial",
-                    "&:hover": { bgcolor: "#005a9e", boxShadow: "none" },
+                    "&:hover": { bgcolor: "#005a9e", boxShadow: "none" }
                   }}
                 >
                   {isLinking ? "Linking..." : "Send to PowerPoint"}
