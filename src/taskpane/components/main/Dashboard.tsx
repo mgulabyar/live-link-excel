@@ -43,7 +43,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
-  
+
   const [isChartSelected, setIsChartSelected] = useState<boolean>(false);
 
   const [lastSelection, setLastSelection] = useState<any>(null);
@@ -75,8 +75,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
     try {
       const selection = await getActiveSelection();
-      setLastSelection(selection); 
-      setIsChartSelected(selection.isChart); 
+      setLastSelection(selection);
+      setIsChartSelected(selection.isChart);
 
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
@@ -105,7 +105,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       } else {
         setIsRangeLinked(null);
         setMatchedRangeAddress(null);
-        setCustomName(selection.chartTitle || ""); 
+        setCustomName(selection.chartTitle || "");
       }
     } catch (e) {
       console.log("[DEBUG] Selection temporarily lost, retaining previous active selection.");
@@ -114,9 +114,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const handleCreateLiveLink = async () => {
     try {
-      const selection = matchedRangeAddress 
-        ? await getActiveSelection(matchedRangeAddress) 
-        : (lastSelection && lastSelection.isChart) ? lastSelection : await getActiveSelection();
+      const selection = matchedRangeAddress
+        ? await getActiveSelection(matchedRangeAddress)
+        : lastSelection && lastSelection.isChart
+          ? lastSelection
+          : await getActiveSelection();
 
       const type = selection.isChart ? "Chart" : "Table";
       let linkId = isRangeLinked;
@@ -154,7 +156,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
         setTimeout(async () => {
           try {
-            const finalComponentName = selection.isChart ? (selection.chartTitle || customName) : customName;
+            const finalComponentName = selection.isChart
+              ? selection.chartTitle || customName
+              : customName;
 
             await registerLinkData({
               linkId: linkId!,
@@ -266,8 +270,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   return (
     <Box
-      onMouseEnter={() => { isMouseInPaneRef.current = true; }} 
-      onMouseLeave={() => { isMouseInPaneRef.current = false; }} 
+      onMouseEnter={() => {
+        isMouseInPaneRef.current = true;
+      }}
+      onMouseLeave={() => {
+        isMouseInPaneRef.current = false;
+      }}
       sx={{
         height: "100vh",
         display: "flex",
@@ -349,18 +357,28 @@ const Dashboard: React.FC<DashboardProps> = () => {
           be refreshed directly in PowerPoint.
         </Typography>
 
-        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 1 }}>
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            mb: 1,
+          }}
+        >
           <TextField
             size="small"
             label={isChartSelected ? "Chart Title (From Excel)" : "Custom Name"} // Dynamically changes labels
-            placeholder={isChartSelected ? "Define title on Excel Chart" : "e.g. Monthly Revenue Table"}
+            placeholder={
+              isChartSelected ? "Define title on Excel Chart" : "e.g. Monthly Revenue Table"
+            }
             value={customName}
             disabled={isChartSelected || isLinking || isUpdating || isUnlinking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
-              width: "70%", 
+              width: "70%",
               "& .MuiOutlinedInput-root": {
-                height: "44px", 
+                height: "44px",
                 fontSize: "13px",
                 fontFamily: "Segoe UI, Arial",
               },
@@ -404,7 +422,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     )
                   }
                   sx={{
-                    width: "100%", 
+                    width: "100%",
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
@@ -427,7 +445,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               onClick={handleUnlinkRange}
               endIcon={<LinkOff sx={{ fontSize: 18 }} />}
               sx={{
-                width: "70%", 
+                width: "70%",
                 height: "44px",
                 fontWeight: 700,
                 textTransform: "none",
@@ -462,7 +480,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     )
                   }
                   sx={{
-                    width: "100%", 
+                    width: "100%",
                     height: "44px",
                     bgcolor: "#0078d4",
                     fontWeight: 700,
@@ -480,50 +498,35 @@ const Dashboard: React.FC<DashboardProps> = () => {
           </Box>
         )}
       </Box>
-{/* 
+
       <Snackbar
         open={statusMessage !== null}
-        autoHideDuration={2000}
-        onClose={() => setStatusMessage(null)}
+        autoHideDuration={3000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") {
+            return;
+          }
+          setStatusMessage(null);
+        }}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         {statusMessage ? (
           <Alert
             onClose={() => setStatusMessage(null)}
             severity={statusMessage.severity}
-            sx={{ width: "100%", fontSize: "13px", fontFamily: "Segoe UI, Arial" }}
+            sx={{
+              width: "100%",
+              fontSize: "13px",
+              fontFamily: "Segoe UI, Arial",
+              boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
+            }}
           >
             {statusMessage.text}
           </Alert>
-        ) : undefined}
-      </Snackbar> */}
-
-<Snackbar
-  open={statusMessage !== null}
-  autoHideDuration={3000} 
-  onClose={(_event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-    setStatusMessage(null);
-  }}
-  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
->
-  {statusMessage ? (
-    <Alert
-      onClose={() => setStatusMessage(null)} 
-      severity={statusMessage.severity}
-      sx={{ 
-        width: "100%", 
-        fontSize: "13px", 
-        fontFamily: "Segoe UI, Arial",
-        boxShadow: "0px 4px 10px rgba(0,0,0,0.1)" 
-      }}
-    >
-      {statusMessage.text}
-    </Alert>
-  ) : <Box />} 
-</Snackbar>
+        ) : (
+          <Box />
+        )}
+      </Snackbar>
 
       <Box sx={{ p: 1.5, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
         <Typography
