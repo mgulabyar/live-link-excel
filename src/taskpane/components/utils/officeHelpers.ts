@@ -1,5 +1,4 @@
 ///////////////////////////// final code everything is in working i have test it. //////////////////////////////////
-
 declare const Excel: any;
 
 export interface LinkMatch {
