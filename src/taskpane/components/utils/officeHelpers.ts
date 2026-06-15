@@ -673,6 +673,8 @@
 //   });
 // };
 
+///////////////////////////// final code everything is in working i have test it. //////////////////////////////////
+
 declare const Excel: any;
 
 export interface LinkMatch {
@@ -760,7 +762,6 @@ export const getExistingLinkId = async (
     parts.load("items");
     await context.sync();
 
-    // PropertyNotLoaded se bachne ke liye baghair zaroorat 'id' ko map nahi kiya gaya
     const xmlBlobs = parts.items.map((part: any) => {
       return {
         xmlBlob: part.getXml(),
@@ -901,13 +902,12 @@ export const getActiveSelection = async (
       return { isChart, sheetName, rangeAddress, dataSnapshot };
     }
 
-    // --- CHART SELECTION ---
     try {
       const activeChart = context.workbook.getSelectedChart();
       activeChart.load("name");
       
       const activeWorksheet = activeChart.worksheet;
-      activeWorksheet.load("name"); // Worksheet ka naam explicitly load kiya gaya hai
+      activeWorksheet.load("name"); 
 
       const chartTitleObj = activeChart.title;
       chartTitleObj.load("text");
@@ -928,7 +928,6 @@ export const getActiveSelection = async (
           chartTitle = chartTitleObj.text;
         }
       } catch (titleErr) {
-        // Safe fallback agar title set na ho
       }
 
       return {
@@ -939,16 +938,15 @@ export const getActiveSelection = async (
         chartTitle,
       };
     } catch (chartErr) {
-      console.log("[DEBUG] Active chart selection failed, falling back to Range check.");
+      console.log("[DEBUG]");
     }
 
-    // --- RANGE SELECTION ---
     try {
       const activeRange = context.workbook.getSelectedRange();
       activeRange.load("address");
       
       const activeWorksheet = activeRange.worksheet;
-      activeWorksheet.load("name"); // Worksheet ka naam explicitly load kiya gaya hai
+      activeWorksheet.load("name"); 
       
       await context.sync();
 

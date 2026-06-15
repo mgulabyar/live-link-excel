@@ -34,7 +34,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
     severity: "success" | "error" | "info";
   } | null>(null);
 
-  // Independent loading states
   const [isLinking, setIsLinking] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isUnlinking, setIsUnlinking] = useState<boolean>(false);
@@ -45,10 +44,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [customName, setCustomName] = useState<string>("");
   const [fetchingName, setFetchingName] = useState<boolean>(false);
   
-  // Track if a Chart is currently active to dynamically disable inputs [1]
   const [isChartSelected, setIsChartSelected] = useState<boolean>(false);
 
-  // Zero-latency selection cache ref [1]
   const [lastSelection, setLastSelection] = useState<any>(null);
   const isMouseInPaneRef = useRef<boolean>(false);
 
@@ -71,7 +68,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
   }, []);
 
   const handleSelectionChanged = async () => {
-    // Zero-latency check: Ignore Excel selection change if mouse is in pane [1]
     if (isMouseInPaneRef.current) {
       console.log("[DEBUG] Selection change ignored because mouse is active inside the taskpane.");
       return;
@@ -79,8 +75,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
     try {
       const selection = await getActiveSelection();
-      setLastSelection(selection); // Cache the selection state [1]
-      setIsChartSelected(selection.isChart); // Check if chart [1]
+      setLastSelection(selection); 
+      setIsChartSelected(selection.isChart); 
 
       const match = await getExistingLinkId(selection.sheetName, selection.rangeAddress);
 
@@ -91,7 +87,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           if (res.success && res.data) {
             setIsRangeLinked(match.linkId);
             setMatchedRangeAddress(match.matchedRange);
-            // Auto-load custom name or chart title [1]
+
             setCustomName(res.data.componentName || selection.chartTitle || "");
           } else {
             setIsRangeLinked(null);
@@ -109,7 +105,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       } else {
         setIsRangeLinked(null);
         setMatchedRangeAddress(null);
-        setCustomName(selection.chartTitle || ""); // Map active Excel Chart Title to input [1]
+        setCustomName(selection.chartTitle || ""); 
       }
     } catch (e) {
       console.log("[DEBUG] Selection temporarily lost, retaining previous active selection.");
@@ -118,7 +114,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   const handleCreateLiveLink = async () => {
     try {
-      // Use cached selection to bypass deselect focus-loss [1]
       const selection = matchedRangeAddress 
         ? await getActiveSelection(matchedRangeAddress) 
         : (lastSelection && lastSelection.isChart) ? lastSelection : await getActiveSelection();
@@ -159,7 +154,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
         setTimeout(async () => {
           try {
-            // If it is a chart, prioritize its own Excel Chart Title over the manual customName! [1]
             const finalComponentName = selection.isChart ? (selection.chartTitle || customName) : customName;
 
             await registerLinkData({
@@ -272,8 +266,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   return (
     <Box
-      onMouseEnter={() => { isMouseInPaneRef.current = true; }} // Active Lock [1]
-      onMouseLeave={() => { isMouseInPaneRef.current = false; }} // Active Unlock [1]
+      onMouseEnter={() => { isMouseInPaneRef.current = true; }} 
+      onMouseLeave={() => { isMouseInPaneRef.current = false; }} 
       sx={{
         height: "100vh",
         display: "flex",
@@ -355,14 +349,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
           be refreshed directly in PowerPoint.
         </Typography>
 
-        {/* Input box margin tightened by 1px (mb: 1) for professional compact visual alignment */}
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 1 }}>
           <TextField
             size="small"
             label={isChartSelected ? "Chart Title (From Excel)" : "Custom Name"} // Dynamically changes labels
             placeholder={isChartSelected ? "Define title on Excel Chart" : "e.g. Monthly Revenue Table"}
             value={customName}
-            // Disabled if it is a Chart (Forces user to set name in Excel title, preventing deselect) [1]
             disabled={isChartSelected || isLinking || isUpdating || isUnlinking || fetchingName}
             onChange={(e) => setCustomName(e.target.value)}
             sx={{
@@ -488,7 +480,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           </Box>
         )}
       </Box>
-
+{/* 
       <Snackbar
         open={statusMessage !== null}
         autoHideDuration={2000}
@@ -504,7 +496,34 @@ const Dashboard: React.FC<DashboardProps> = () => {
             {statusMessage.text}
           </Alert>
         ) : undefined}
-      </Snackbar>
+      </Snackbar> */}
+
+<Snackbar
+  open={statusMessage !== null}
+  autoHideDuration={3000} 
+  onClose={(_event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setStatusMessage(null);
+  }}
+  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+>
+  {statusMessage ? (
+    <Alert
+      onClose={() => setStatusMessage(null)} 
+      severity={statusMessage.severity}
+      sx={{ 
+        width: "100%", 
+        fontSize: "13px", 
+        fontFamily: "Segoe UI, Arial",
+        boxShadow: "0px 4px 10px rgba(0,0,0,0.1)" 
+      }}
+    >
+      {statusMessage.text}
+    </Alert>
+  ) : <Box />} 
+</Snackbar>
 
       <Box sx={{ p: 1.5, textAlign: "center", borderTop: "1px solid #EDEBE9" }}>
         <Typography
